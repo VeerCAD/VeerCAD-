@@ -773,7 +773,7 @@ function readBillFile(input) {
     .catch(function(err){
       var isOffline=err.message&&(err.message.indexOf('fetch')>-1||err.message.indexOf('network')>-1||err.message.indexOf('Failed')>-1);
       var msg=isOffline
-        ? '📡 No internet — open the app from <strong>famous-centaur-faa851.netlify.app</strong> for bill reading to work.'
+        ? '📡 No internet — open the app from <strong>veercad.github.io/VeerCAD-</strong> for bill reading to work.'
         : '❌ Error: '+(err.message||'Unknown error');
       document.getElementById('prev-info-box').innerHTML='<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:14px 16px;font-size:13px;color:#dc2626;line-height:1.6">'+msg+'</div>';
       document.getElementById('prev-items-box').innerHTML='';
