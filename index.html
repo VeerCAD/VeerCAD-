@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VeerCAD — Work Manager</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: sans-serif; background: #f1f5f9; }
+
+/* HEADER */
+.header { background: #1e3a8a; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header-logo { color: white; font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+.header-date { color: #93c5fd; font-size: 12px; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; }
+
+/* PAGES */
+.page { display: none; padding: 16px; padding-bottom: 84px; }
+.page.active { display: block; }
+
+/* BOTTOM NAV */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; z-index: 100; }
+.nav-btn { flex: 1; padding: 10px 4px 8px; text-align: center; border: none; background: none; cursor: pointer; font-size: 10px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.nav-btn.active { color: #2563eb; font-weight: 700; }
+.nav-icon { font-size: 22px; line-height: 1; }
+
+/* CARDS */
+.card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card-title { color: #1e3a8a; font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+
+/* STAT GRID */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat { background: white; border-radius: 14px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.stat-lbl { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.stat-val { font-size: 26px; font-weight: 800; color: #1e3a8a; line-height: 1; }
+.stat-val small { font-size: 13px; font-weight: 400; }
+
+/* SMART INPUT */
+.smart-box { background: linear-gradient(135deg, #1e3a8a, #2563eb); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+.smart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.smart-title { color: white; font-size: 15px; font-weight: 700; }
+.smart-badge { font-size: 10px; padding: 2px 10px; border-radius: 20px; background: rgba(255,255,255,0.15); color: #bfdbfe; border: 1px solid rgba(255,255,255,0.2); }
+.smart-sub { color: #93c5fd; font-size: 12px; margin-bottom: 12px; }
+#ai-txt { width: 100%; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 13px; color: white; font-size: 15px; line-height: 1.6; resize: none; min-height: 80px; outline: none; font-family: sans-serif; }
+#ai-txt::placeholder { color: rgba(255,255,255,0.4); }
+#ai-txt:focus { border-color: rgba(255,255,255,0.5); }
+.examples { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.eg { font-size: 11px; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.1); color: #bfdbfe; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; white-space: nowrap; }
+.parse-btn { width: 100%; padding: 13px; background: white; color: #1e3a8a; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+.parse-btn:disabled { opacity: 0.6; }
+
+/* FORM */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px; }
+.field input, .field select, .field textarea { width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 15px; color: #1e293b; background: #fafbfc; outline: none; font-family: sans-serif; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: #2563eb; background: white; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* TABLE */
+.tbl-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 10px; }
+table { width: 100%; border-collapse: collapse; min-width: 300px; }
+thead tr { background: #1e3a8a; }
+th { padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 0.8px; text-transform: uppercase; }
+th.r, td.r { text-align: right; }
+th.c, td.c { text-align: center; width: 36px; }
+td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: #fafbfc; }
+td input[type=text] { border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px; font-size: 13px; width: 100%; background: white; outline: none; font-family: sans-serif; }
+td input[type=number] { border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px; font-size: 13px; width: 90px; text-align: right; background: white; outline: none; }
+td input:focus { border-color: #2563eb; }
+.del-btn { background: none; border: none; cursor: pointer; color: #cbd5e1; font-size: 18px; padding: 2px 6px; }
+.tbl-foot { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: #1e3a8a; border-radius: 0 0 10px 10px; }
+.tbl-foot-lbl { color: rgba(255,255,255,0.7); font-size: 13px; }
+.tbl-foot-val { font-size: 18px; font-weight: 800; color: white; }
+.add-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.add-btn { padding: 7px 13px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: white; font-size: 12px; cursor: pointer; color: #475569; font-family: sans-serif; }
+.add-btn.primary { background: #2563eb; color: white; border-color: #2563eb; }
+
+/* SUMMARY BOXES */
+.sum-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.sum-box { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px; }
+.sum-box.hl { background: #eff6ff; border-color: #bfdbfe; }
+.sum-lbl { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+.sum-val { font-size: 22px; font-weight: 700; color: #1e3a8a; }
+
+/* SLIDER */
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: #e2e8f0; outline: none; margin: 8px 0; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #2563eb; cursor: pointer; }
+
+/* BUTTONS */
+.btn { padding: 13px; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: sans-serif; }
+.btn-blue { background: #2563eb; color: white; }
+.btn-green { background: #059669; color: white; }
+.btn-ghost { background: #f1f5f9; color: #475569; }
+.btn-red { background: #fee2e2; color: #dc2626; }
+.brow { display: flex; gap: 10px; margin-bottom: 10px; }
+.brow .btn { flex: 1; }
+
+/* PROJECT CARDS GRID */
+.proj-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.proj-card { background: white; border-radius: 14px; padding: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); cursor: pointer; border-top: 4px solid #e2e8f0; position: relative; }
+.proj-card:active { opacity: 0.85; }
+.proj-card.paid { border-top-color: #059669; }
+.proj-card.partial { border-top-color: #d97706; }
+.proj-card.pending { border-top-color: #94a3b8; }
+.pc-badge { position: absolute; top: 10px; right: 10px; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.pc-badge.paid { background: #d1fae5; color: #065f46; }
+.pc-badge.partial { background: #fef3c7; color: #92400e; }
+.pc-badge.pending { background: #f1f5f9; color: #475569; }
+.pc-client { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 48px; }
+.pc-desc { font-size: 11px; color: #94a3b8; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-total { font-size: 20px; font-weight: 800; color: #1e3a8a; line-height: 1; }
+.pc-total-lbl { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.pc-bal { font-size: 11px; font-weight: 600; }
+.pc-bal.due { color: #d97706; }
+.pc-bal.clear { color: #059669; }
+.pc-date { font-size: 10px; color: #cbd5e1; margin-top: 6px; }
+
+/* FILTER CHIPS */
+.filter-row { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+.fchip { padding: 6px 14px; border-radius: 20px; font-size: 12px; border: 1.5px solid #e2e8f0; background: white; color: #475569; cursor: pointer; white-space: nowrap; flex-shrink: 0; font-family: sans-serif; }
+.fchip.active { background: #eff6ff; border-color: #2563eb; color: #2563eb; font-weight: 600; }
+
+/* DETAIL VIEW */
+#proj-detail { display: none; padding: 16px; padding-bottom: 84px; }
+.detail-back { display: flex; align-items: center; gap: 6px; color: #2563eb; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 14px; padding: 4px 0; }
+.detail-hero { background: linear-gradient(135deg, #1e3a8a, #2563eb); border-radius: 14px; padding: 20px; margin-bottom: 14px; color: white; }
+.dh-client { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.dh-desc { font-size: 13px; color: #93c5fd; margin-bottom: 14px; }
+.dh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dh-box { background: rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; }
+.dh-lbl { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+.dh-val { font-size: 18px; font-weight: 800; color: white; }
+.detail-item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+.detail-item-row:last-child { border-bottom: none; }
+
+/* MODAL OVERLAY */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 500; display: none; align-items: flex-end; justify-content: center; padding: 16px; }
+.modal-bg.open { display: flex; }
+.modal { background: white; border-radius: 20px 20px 14px 14px; width: 100%; max-width: 500px; max-height: 88vh; overflow-y: auto; padding: 22px; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.modal-title { font-size: 16px; font-weight: 700; color: #1e3a8a; }
+.modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #94a3b8; line-height: 1; }
+
+/* PREVIEW ITEMS */
+.prev-info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; }
+.prev-info-title { font-size: 11px; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.prev-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; color: #475569; }
+.prev-row strong { color: #1e293b; }
+.prev-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; margin-bottom: 8px; }
+.prev-item input[type=text] { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 10px; font-size: 14px; color: #1e293b; background: white; outline: none; min-width: 0; font-family: sans-serif; }
+.prev-item input[type=number] { width: 90px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 8px; font-size: 14px; font-weight: 700; color: #1e3a8a; text-align: right; background: white; outline: none; flex-shrink: 0; }
+.prev-rm { background: none; border: none; color: #cbd5e1; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+.prev-total { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #1e3a8a; border-radius: 10px; margin: 8px 0 14px; }
+
+/* SUMMARY POPUP */
+.sum-popup-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+.sum-popup-row:last-child { border-bottom: none; }
+.sum-popup-row.big { font-weight: 700; font-size: 16px; color: #1e3a8a; }
+.sum-popup-row.due { color: #d97706; font-weight: 700; }
+
+/* EMPTY */
+.empty { text-align: center; padding: 40px 20px; color: #94a3b8; grid-column: span 2; }
+.empty-ico { font-size: 36px; margin-bottom: 8px; }
+.empty p { font-size: 14px; line-height: 1.6; }
+
+/* TOAST */
+#toast { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px; font-size: 13px; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 9999; max-width: 90vw; text-align: center; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.ok { background: #059669; }
+#toast.err { background: #dc2626; }
+
+.sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sec-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+.sec-link { font-size: 12px; color: #2563eb; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">VeerCAD</div>
+  <div class="header-date" id="date-chip"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dash">
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-lbl">Total Projects</div><div class="stat-val" id="s-total">0</div></div>
+    <div class="stat"><div class="stat-lbl">Pending Due</div><div class="stat-val" id="s-bal"><small>Rs.</small>0</div></div>
+    <div class="stat"><div class="stat-lbl">This Month</div><div class="stat-val" id="s-month"><small>Rs.</small>0</div></div>
+    <div class="stat"><div class="stat-lbl">Paid Projects</div><div class="stat-val" id="s-paid">0</div></div>
+  </div>
+  <div class="card">
+    <div class="sec-head">
+      <div class="sec-title">Recent Projects</div>
+      <div class="sec-link" onclick="nav('projects')">View all →</div>
+    </div>
+    <div id="dash-recent"></div>
+  </div>
+</div>
+
+<!-- NEW ENTRY -->
+<div class="page" id="page-entry">
+
+  <!-- Smart Input -->
+  <div class="smart-box">
+    <div class="smart-head">
+      <div class="smart-title">⚡ Smart Input</div>
+      <span class="smart-badge" id="ai-badge">NEW PROJECT</span>
+    </div>
+    <div class="smart-sub">Any language, any format — AI understands</div>
+    <textarea id="ai-txt" placeholder="Type naturally...&#10;e.g: Amitbhai railing, saliya 12000, labour 15000, transport 3000, 20% profit, advance 5000"></textarea>
+    <div class="examples">
+      <div class="eg" onclick="setEg('Ramesh gate saliya 8000 labour 5000 20% advance 3000')">Ramesh gate saliya 8000</div>
+      <div class="eg" onclick="setEg('pipe 5000 welding 3000 transport 1500 15% profit')">pipe welding transport</div>
+      <div class="eg" onclick="setEg('ISMC 100 3 meter 2 piece')">⚖️ ISMC 100 3m 2pc</div>
+      <div class="eg" onclick="setEg('120 * 3.5 + 500')">🧮 120 × 3.5 + 500</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="parse-btn" id="parse-btn" onclick="smartParse()" style="flex:1">⚡ Understand &amp; Preview</button>
+      <button class="parse-btn" onclick="if(!getApiKey()){showApiKeyModal();}else{triggerBillRead();}" style="flex:0 0 auto;width:auto;padding:13px 16px;background:rgba(255,255,255,0.15);color:white;border:1.5px solid rgba(255,255,255,0.3)" title="Read from Photo or PDF">📷 Read Bill</button>
+    </div>
+    <input type="file" id="bill-file" accept="image/*,application/pdf" style="display:none" onchange="readBillFile(this)">
+  </div>
+
+  <!-- Project Details -->
+  <div class="card">
+    <div class="card-title">Project Details</div>
+    <div class="g2">
+      <div class="field"><label>Client Name *</label><input type="text" id="f-client" placeholder="e.g. Amitbhai"></div>
+      <div class="field"><label>Work Description</label><input type="text" id="f-desc" placeholder="e.g. MS Railing"></div>
+      <div class="field"><label>Date</label><input type="date" id="f-date"></div>
+      <div class="field"><label>Status</label>
+        <select id="f-status"><option>Pending</option><option>Partial</option><option>Paid</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="f-notes" rows="2" placeholder="Optional remarks..."></textarea></div>
+  </div>
+
+  <!-- Expense Table -->
+  <div class="card" style="padding:14px">
+    <div class="card-title">Expense Items</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th class="c">#</th><th>Description</th><th class="r">Amount Rs.</th><th class="c"></th>
+        </tr></thead>
+        <tbody id="exp-body"></tbody>
+      </table>
+    </div>
+    <div class="tbl-foot">
+      <div class="tbl-foot-lbl">Total Cost</div>
+      <div class="tbl-foot-val">Rs.<span id="fc-cost">0</span></div>
+    </div>
+    <div class="add-btns">
+      <button class="add-btn primary" onclick="addRow()">+ Add Row</button>
+      <button class="add-btn" onclick="addRow('Material')">+ Material</button>
+      <button class="add-btn" onclick="addRow('Labour')">+ Labour</button>
+      <button class="add-btn" onclick="addRow('Transport')">+ Transport</button>
+      <button class="add-btn" onclick="addRow('Consumables')">+ Consumables</button>
+    </div>
+  </div>
+
+  <!-- Profit & Settlement -->
+  <div class="card">
+    <div class="card-title">Profit &amp; Settlement</div>
+    <div class="field">
+      <label>Profit % — <span id="pct-lbl" style="color:#2563eb;font-weight:700">20%</span></label>
+      <input type="range" id="f-range" min="0" max="200" value="20" oninput="onSlider(this)">
+    </div>
+    <div class="g2">
+      <div class="field"><label>Profit % Manual</label><input type="number" id="f-pct" value="20" min="0" oninput="onPct(this)"></div>
+      <div class="field"><label>Advance Received Rs.</label><input type="number" id="f-adv" value="0" min="0" oninput="recalc()"></div>
+    </div>
+    <div class="sum-grid">
+      <div class="sum-box"><div class="sum-lbl">Total Cost</div><div class="sum-val">Rs.<span id="sv-cost">0</span></div></div>
+      <div class="sum-box"><div class="sum-lbl">Profit</div><div class="sum-val">Rs.<span id="sv-profit">0</span></div></div>
+      <div class="sum-box hl"><div class="sum-lbl">Grand Total</div><div class="sum-val">Rs.<span id="sv-total">0</span></div></div>
+      <div class="sum-box"><div class="sum-lbl">Balance Due</div><div class="sum-val">Rs.<span id="sv-bal">0</span></div></div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="card">
+    <div class="brow">
+      <button class="btn btn-blue" onclick="showSummaryPopup()">💾 Save Project</button>
+      <button class="btn btn-ghost" onclick="clearEntry()">🗑 Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTS -->
+<div class="page" id="page-projects">
+  <div class="filter-row">
+    <div class="fchip active" onclick="setFilter('',this)">All</div>
+    <div class="fchip" onclick="setFilter('Pending',this)">Pending</div>
+    <div class="fchip" onclick="setFilter('Partial',this)">Partial</div>
+    <div class="fchip" onclick="setFilter('Paid',this)">Paid</div>
+  </div>
+  <div class="proj-grid" id="proj-grid"></div>
+</div>
+
+<!-- PROJECT DETAIL -->
+<div id="proj-detail">
+  <div class="detail-back" onclick="closeDetail()">← Back</div>
+  <div class="detail-hero">
+    <div class="dh-client" id="d-client"></div>
+    <div class="dh-desc" id="d-desc"></div>
+    <div class="dh-grid">
+      <div class="dh-box"><div class="dh-lbl">Grand Total</div><div class="dh-val" id="d-total"></div></div>
+      <div class="dh-box"><div class="dh-lbl">Balance Due</div><div class="dh-val" id="d-bal"></div></div>
+      <div class="dh-box"><div class="dh-lbl">Advance Paid</div><div class="dh-val" id="d-adv"></div></div>
+      <div class="dh-box"><div class="dh-lbl">Status</div><div class="dh-val" id="d-status"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Expense Breakdown</div>
+    <div id="d-items"></div>
+  </div>
+  <div class="brow">
+    <button class="btn btn-blue" onclick="editFromDetail()">✏️ Edit</button>
+    <button class="btn btn-red" onclick="deleteFromDetail()">🗑 Delete</button>
+  </div>
+  <div class="brow">
+    <button class="btn" style="background:#f0fdf4;color:#059669;font-weight:700" onclick="showPDFModal()">📄 PDF</button>
+    <button class="btn" style="background:#f0fdf4;color:#059669;font-weight:700" onclick="showWAModal()">💬 WhatsApp</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="nav">
+  <button class="nav-btn active" id="nav-dash" onclick="nav('dash')"><span class="nav-icon">🏠</span>Dashboard</button>
+  <button class="nav-btn" id="nav-entry" onclick="nav('entry')"><span class="nav-icon">➕</span>New Entry</button>
+  <button class="nav-btn" id="nav-projects" onclick="nav('projects')"><span class="nav-icon">📁</span>Projects</button>
+  <button class="nav-btn" id="nav-reports" onclick="nav('reports')"><span class="nav-icon">📊</span>Reports</button>
+</div>
+
+<!-- AI PREVIEW MODAL -->
+<div class="modal-bg" id="mod-preview">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">✅ What I understood</div>
+      <button class="modal-close" onclick="closeMod('mod-preview')">✕</button>
+    </div>
+    <div id="prev-info-box"></div>
+    <div id="prev-items-box"></div>
+    <div class="prev-total">
+      <span style="color:#93c5fd;font-size:13px">Items total</span>
+      <span style="font-size:18px;font-weight:800;color:white" id="prev-total-val">Rs.0</span>
+    </div>
+    <div class="brow">
+      <button class="btn btn-ghost" onclick="closeMod('mod-preview')">✏️ Edit</button>
+      <button class="btn btn-blue" onclick="acceptPreview()">✅ Fill Form</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY POPUP MODAL -->
+<div class="modal-bg" id="mod-summary">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">📋 Project Summary</div>
+      <button class="modal-close" onclick="closeMod('mod-summary')">✕</button>
+    </div>
+    <div id="summary-content"></div>
+    <div class="brow" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeMod('mod-summary')">✏️ Edit More</button>
+      <button class="btn btn-green" onclick="confirmSave()">✅ Confirm &amp; Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTS PAGE -->
+<div class="page" id="page-reports">
+  <div id="reports-content"></div>
+</div>
+
+<!-- PDF OPTIONS MODAL -->
+<div class="modal-bg" id="mod-pdf">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">📄 PDF Invoice Options</div>
+      <button class="modal-close" onclick="closeMod('mod-pdf')">✕</button>
+    </div>
+    <div style="margin-bottom:14px;font-size:13px;color:#64748b">Choose what to show on client invoice:</div>
+    <div id="pdf-client-name" style="font-size:15px;font-weight:700;color:#1e3a8a;margin-bottom:14px"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer">
+        <input type="radio" name="pdf-opt" value="simple" checked style="width:18px;height:18px;accent-color:#2563eb">
+        <div><div style="font-size:14px;font-weight:600;color:#1e293b">Simple</div><div style="font-size:12px;color:#64748b">Client, Work, Grand Total, Balance Due</div></div>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer">
+        <input type="radio" name="pdf-opt" value="itemized" style="width:18px;height:18px;accent-color:#2563eb">
+        <div><div style="font-size:14px;font-weight:600;color:#1e293b">Itemized</div><div style="font-size:12px;color:#64748b">All expense rows shown (no profit shown)</div></div>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer">
+        <input type="radio" name="pdf-opt" value="total" style="width:18px;height:18px;accent-color:#2563eb">
+        <div><div style="font-size:14px;font-weight:600;color:#1e293b">Total Only</div><div style="font-size:12px;color:#64748b">Grand Total and Balance Due only</div></div>
+      </label>
+    </div>
+    <div class="brow">
+      <button class="btn btn-ghost" onclick="closeMod('mod-pdf')">Cancel</button>
+      <button class="btn btn-blue" onclick="generatePDF()">📄 Generate PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- WHATSAPP SHARE MODAL -->
+<div class="modal-bg" id="mod-wa">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">💬 WhatsApp Share</div>
+      <button class="modal-close" onclick="closeMod('mod-wa')">✕</button>
+    </div>
+    <div id="wa-preview" style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:14px;font-size:13px;font-family:monospace;white-space:pre-wrap;line-height:1.7;max-height:300px;overflow-y:auto;margin-bottom:14px;color:#1e293b"></div>
+    <div class="brow">
+      <button class="btn btn-ghost" onclick="copyWA()">📋 Copy</button>
+      <button class="btn btn-green" onclick="sendWA()">💬 Send WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT CHOICE MODAL --><!-- CLIENT CHOICE MODAL -->
+<div class="modal-bg" id="mod-choice">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">🤔 Client Already Exists</div>
+      <button class="modal-close" onclick="closeMod('mod-choice');_pendingPreview=null;_pendingExisting=null;">✕</button>
+    </div>
+    <div id="choice-body"></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-blue" onclick="choiceAddToExisting()" style="width:100%">➕ Add to Existing Project</button>
+      <button class="btn" style="background:#f1f5f9;color:#475569;width:100%" onclick="choiceCreateNew()">🆕 Create Brand New Project</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(this)">
+<div id="toast"></div>
+
+<script>
+// ── STATE
+var rows = [];
+var editId = null;
+var projFilter = '';
+var openDetailId = null;
+var _preview = null;
+var projects = [];
+try { projects = JSON.parse(localStorage.getItem('vc_p') || '[]'); } catch(e) { projects = []; }
+
+var CATS = ['Material','Labour','Transport','Consumables','Other'];
+var CMAP = {pipe:'Material',steel:'Material',iron:'Material',ms:'Material',rod:'Material',sheet:'Material',angle:'Material',channel:'Material',ismc:'Material',ismb:'Material',flat:'Material',patti:'Material',jali:'Material',saliya:'Material',grill:'Material',railing:'Material',gate:'Material',frame:'Material',wire:'Material',labour:'Labour',labor:'Labour',majdoor:'Labour',worker:'Labour',welding:'Labour',grinding:'Labour',fitting:'Labour',karigar:'Labour',mistri:'Labour',cutting:'Labour',painting:'Labour',helper:'Labour',transport:'Transport',lorry:'Transport',vehicle:'Transport',truck:'Transport',freight:'Transport',delivery:'Transport',paint:'Consumables',gas:'Consumables',primer:'Consumables',disc:'Consumables',electrode:'Consumables'};
+
+
+// ── SAFE MATH (no eval)
+function safeMath(expr) {
+  expr = expr.replace(/\s+/g,'').replace(/x/gi,'*');
+  var pos = 0;
+  function peek(){return expr[pos];}
+  function consume(){return expr[pos++];}
+  function parseNum(){
+    var s='';
+    if(peek()==='-'){s+=consume();}
+    while(pos<expr.length&&/[\d.]/.test(peek())) s+=consume();
+    if(peek()==='('){pos++;var v=parseExpr();if(peek()===')') pos++;return v;}
+    return parseFloat(s);
+  }
+  function parseFactor(){
+    if(peek()==='('){pos++;var v=parseExpr();if(peek()===')') pos++;return v;}
+    return parseNum();
+  }
+  function parseTerm(){
+    var v=parseFactor();
+    while(pos<expr.length&&(peek()==='*'||peek()==='/')){
+      var op=consume(); var r=parseFactor();
+      v=op==='*'?v*r:v/r;
+    }
+    return v;
+  }
+  function parseExpr(){
+    var v=parseTerm();
+    while(pos<expr.length&&(peek()==='+'||peek()==='-')){
+      var op=consume(); var r=parseTerm();
+      v=op==='+'?v+r:v-r;
+    }
+    return v;
+  }
+  try{var r=parseExpr();return isNaN(r)?null:Math.round(r*100)/100;}catch(e){return null;}
+}
+
+// ── UNIT CONVERT
+var UC = {
+  m:1, meter:1, metre:1, meters:1,
+  ft:0.3048, feet:0.3048, foot:0.3048,
+  inch:0.0254, inches:0.0254,
+  cm:0.01, mm:0.001,
+  kg:1, kilogram:1,
+  ton:1000, tonne:1000,
+  quintal:100,
+  sqm:1, sqft:0.0929, sqyard:0.836
+};
+function doConvert(val, from, to) {
+  var f=UC[from.toLowerCase()], t=UC[to.toLowerCase()];
+  if(!f||!t) return null;
+  return Math.round((val*f/t)*10000)/10000;
+}
+
+// ── COMPREHENSIVE MATERIAL DATABASE
+// Base rates per kg (INR, updated periodically)
+// Material multipliers relative to MS (mild steel = 1.0)
+var MAT_RATES = {
+  'ms':58,'mild steel':58,'ms plate':58,'ms sheet':58,
+  'ss304':190,'stainless 304':190,'stainless steel 304':190,
+  'ss202':130,'stainless 202':130,'stainless steel 202':130,
+  'ss316':260,'stainless 316':260,'stainless steel 316':260,
+  'ss201':120,'stainless 201':120,
+  'aluminium':180,'aluminum':180,'alloy':180,
+  'gi':75,'galvanized':75,'galvanised':75,'gi pipe':75,'gi sheet':75,
+  'ms pipe':62,'ms tube':62,
+  'copper':720,'brass':500,'bronze':480,
+  'cast iron':45,'ci':45
+};
+
+// Default material when not specified
+var DEFAULT_MAT = 'ms';
+
+// kg per meter for steel profiles (ALL standard sizes)
+var PROFILES = {
+  // MS Channels (ISMC)
+  'ISMC 75':7.14,'ISMC 100':9.56,'ISMC 125':13.1,'ISMC 150':16.8,'ISMC 175':19.6,
+  'ISMC 200':22.1,'ISMC 225':25.9,'ISMC 250':30.6,'ISMC 300':36.3,'ISMC 400':49.4,
+  // MS Beams (ISMB)
+  'ISMB 100':8.0,'ISMB 125':13.2,'ISMB 150':15.0,'ISMB 175':19.6,'ISMB 200':25.4,
+  'ISMB 225':31.2,'ISMB 250':37.3,'ISMB 300':46.1,'ISMB 350':52.4,'ISMB 400':61.6,
+  'ISMB 450':70.2,'ISMB 500':86.9,'ISMB 600':122.6,
+  // MS Angles (equal leg)
+  'Angle 25x25x3':1.11,'Angle 32x32x3':1.42,'Angle 40x40x4':2.35,'Angle 45x45x5':3.27,
+  'Angle 50x50x5':3.77,'Angle 50x50x6':4.47,'Angle 60x60x6':5.42,'Angle 65x65x6':5.84,
+  'Angle 70x70x7':7.40,'Angle 75x75x6':6.84,'Angle 75x75x8':9.0,'Angle 80x80x8':9.73,
+  'Angle 90x90x8':11.0,'Angle 100x100x8':12.2,'Angle 110x110x10':16.6,'Angle 130x130x10':19.7,
+  'Angle 150x150x12':27.3,
+  // MS Flat bars
+  'Flat 20x3':0.47,'Flat 25x3':0.59,'Flat 30x5':1.18,'Flat 40x5':1.57,'Flat 50x5':1.96,
+  'Flat 50x6':2.36,'Flat 65x8':4.08,'Flat 75x6':3.53,'Flat 75x8':4.71,'Flat 100x8':6.28,
+  // MS Round bars
+  'Round 6mm':0.22,'Round 8mm':0.40,'Round 10mm':0.62,'Round 12mm':0.89,'Round 16mm':1.58,
+  'Round 20mm':2.47,'Round 25mm':3.86,'Round 28mm':4.83,'Round 32mm':6.31,'Round 36mm':7.99,
+  'Round 40mm':9.86,'Round 50mm':15.4,
+  // MS Square bars
+  'Square 8mm':0.50,'Square 10mm':0.79,'Square 12mm':1.13,'Square 16mm':2.01,
+  'Square 20mm':3.14,'Square 25mm':4.91,'Square 32mm':8.04,
+  // MS Pipes (round, nominal bore)
+  'Pipe 0.5inch':0.84,'Pipe 0.75inch':1.21,'Pipe 1inch':2.55,'Pipe 1.25inch':3.56,
+  'Pipe 1.5inch':4.05,'Pipe 2inch':5.41,'Pipe 2.5inch':7.77,'Pipe 3inch':9.45,
+  'Pipe 3.5inch':11.5,'Pipe 4inch':13.2,'Pipe 5inch':17.4,'Pipe 6inch':22.1,
+  // MS Square/Rect pipes (hollow section)
+  'SqPipe 20x20x2':1.12,'SqPipe 25x25x2':1.43,'SqPipe 30x30x2':1.74,
+  'SqPipe 40x40x2':2.35,'SqPipe 40x40x3':3.45,'SqPipe 50x50x2':3.0,
+  'SqPipe 50x50x3':4.44,'SqPipe 60x60x3':5.41,'SqPipe 75x75x3':6.86,
+  'SqPipe 75x75x4':9.03,'SqPipe 100x100x4':12.12,'SqPipe 100x50x3':6.86,
+  // MS Plates / Sheets (kg per m²)
+  'Plate 1mm':7.85,'Plate 1.5mm':11.78,'Plate 2mm':15.7,'Plate 2.5mm':19.6,
+  'Plate 3mm':23.6,'Plate 4mm':31.4,'Plate 5mm':39.3,'Plate 6mm':47.1,
+  'Plate 8mm':62.8,'Plate 10mm':78.5,'Plate 12mm':94.2,'Plate 16mm':125.6,
+  'Plate 20mm':157,'Plate 25mm':196,
+  // Chequered plate
+  'Cheq 3mm':25.1,'Cheq 4mm':32.6,'Cheq 5mm':41.2,'Cheq 6mm':49.2,
+  // GI profiles
+  'GI Pipe 0.5inch':0.84,'GI Pipe 1inch':2.55,'GI Pipe 1.5inch':4.05,
+  'GI Pipe 2inch':5.41,'GI Pipe 3inch':9.45,
+  // SS Plates
+  'SS Plate 1mm':8.0,'SS Plate 1.5mm':12.0,'SS Plate 2mm':16.0,
+  'SS Plate 3mm':24.0,'SS Plate 4mm':32.0,'SS Plate 6mm':48.0,
+  // Aluminium extrusions (lighter)
+  'Al Flat 25x3':0.20,'Al Flat 50x6':0.81,'Al Angle 25x25x3':0.38,
+  'Al Plate 2mm':5.40,'Al Plate 3mm':8.10,'Al Plate 4mm':10.8,
+  // Wire mesh (kg/m²)
+  'Jali 12g':1.8,'Jali 14g':1.4,'Jali 16g':1.0,'Jali 18g':0.7
+};
+
+// Parse material type from text
+function detectMaterial(txt) {
+  var t=txt.toLowerCase();
+  if(/ss\s*304|stainless\s*304/.test(t)) return 'ss304';
+  if(/ss\s*316|stainless\s*316/.test(t)) return 'ss316';
+  if(/ss\s*202|stainless\s*202/.test(t)) return 'ss202';
+  if(/ss\s*201/.test(t)) return 'ss201';
+  if(/ss|stainless/.test(t)) return 'ss304'; // default ss
+  if(/alumini?um|alumin|al/.test(t)) return 'aluminium';
+  if(/gi|galvan/.test(t)) return 'gi';
+  if(/copper/.test(t)) return 'copper';
+  if(/brass/.test(t)) return 'brass';
+  return 'ms'; // default
+}
+
+function getMaterialRate(matKey) {
+  return MAT_RATES[matKey] || MAT_RATES['ms'];
+}
+
+function calcWeight(txt) {
+  var orig=txt;
+  var matKey=detectMaterial(txt);
+  var matRate=getMaterialRate(matKey);
+  var matLabel=matKey.toUpperCase();
+  var profile=null, kgPerM=0, bestLen=0;
+  var tu=txt.toUpperCase().replace(/\s+/g,' ');
+  for(var pk in PROFILES){
+    var pkU=pk.toUpperCase();
+    if(tu.indexOf(pkU)>-1 && pkU.length>bestLen){profile=pk;kgPerM=PROFILES[pk];bestLen=pkU.length;}
+  }
+  if(!profile){
+    var fuzz=[
+      [/ismc\s*(\d+)/i,function(m){return 'ISMC '+m[1];}],
+      [/ismb\s*(\d+)/i,function(m){return 'ISMB '+m[1];}],
+      [/channel\s*(\d+)/i,function(m){return 'ISMC '+m[1];}],
+      [/beam\s*(\d+)/i,function(m){return 'ISMB '+m[1];}],
+      [/pipe\s*(\d+(?:\.\d+)?)\s*(?:inch|")/i,function(m){return 'Pipe '+m[1]+'inch';}],
+      [/gi\s*pipe\s*(\d+(?:\.\d+)?)\s*(?:inch|")/i,function(m){return 'GI Pipe '+m[1]+'inch';}],
+      [/sq\s*pipe\s*(\d+)x(\d+)x(\d+)/i,function(m){return 'SqPipe '+m[1]+'x'+m[2]+'x'+m[3];}],
+      [/hollow\s*(\d+)x(\d+)x(\d+)/i,function(m){return 'SqPipe '+m[1]+'x'+m[2]+'x'+m[3];}],
+      [/angle\s*(\d+)x(\d+)x(\d+)/i,function(m){return 'Angle '+m[1]+'x'+m[2]+'x'+m[3];}],
+      [/flat\s*(\d+)x(\d+)/i,function(m){return 'Flat '+m[1]+'x'+m[2];}],
+      [/patti\s*(\d+)x(\d+)/i,function(m){return 'Flat '+m[1]+'x'+m[2];}],
+      [/round\s*(\d+)\s*mm/i,function(m){return 'Round '+m[1]+'mm';}],
+      [/rod\s*(\d+)\s*mm/i,function(m){return 'Round '+m[1]+'mm';}],
+      [/square\s*(\d+)\s*mm/i,function(m){return 'Square '+m[1]+'mm';}],
+      [/(?:ms\s*)?plate\s*(\d+(?:\.\d+)?)\s*mm/i,function(m){return 'Plate '+m[1]+'mm';}],
+      [/(?:ms\s*)?sheet\s*(\d+(?:\.\d+)?)\s*mm/i,function(m){return 'Plate '+m[1]+'mm';}],
+      [/(\d+(?:\.\d+)?)\s*mm\s*(?:plate|sheet)/i,function(m){return 'Plate '+m[1]+'mm';}],
+      [/(\d+(?:\.\d+)?)\s*mm\s*(?:thk|thick)/i,function(m){return 'Plate '+m[1]+'mm';}],
+      [/cheq\w*\s*(\d+)\s*mm/i,function(m){return 'Cheq '+m[1]+'mm';}],
+      [/jali\s*(\d+)\s*(?:gauge|g\b)/i,function(m){return 'Jali '+m[1]+'g';}],
+      [/ss\s*plate\s*(\d+(?:\.\d+)?)\s*mm/i,function(m){return 'SS Plate '+m[1]+'mm';}],
+      [/al\w*\s*plate\s*(\d+(?:\.\d+)?)\s*mm/i,function(m){return 'Al Plate '+m[1]+'mm';}],
+    ];
+    for(var fi=0;fi<fuzz.length;fi++){
+      var fm=txt.match(fuzz[fi][0]);
+      if(fm){var pk2=fuzz[fi][1](fm);if(PROFILES[pk2]){profile=pk2;kgPerM=PROFILES[pk2];break;}}
+    }
+  }
+  if(!profile||!kgPerM) return {error:true,msg:'Not found. Try: "ISMC 100", "Plate 6mm", "Pipe 2inch", "Angle 50x50x6", "SqPipe 40x40x3", "Round 20mm", "Flat 50x6", "Cheq 5mm"'};
+
+  var lenM=0,sqm=0;
+  var lmt=txt.match(/(\d+(?:\.\d+)?)\s*(?:meter|metre|mtr)\b/i)||txt.match(/(\d+(?:\.\d+)?)\s+m\b/);
+  if(lmt) lenM=parseFloat(lmt[1]);
+  var lft=txt.match(/(\d+(?:\.\d+)?)\s*(?:feet|foot|ft)\b/i);
+  if(lft) lenM=(lenM||0)+parseFloat(lft[1])*0.3048;
+  var pieces=1;
+  var pmt=txt.match(/(\d+)\s*(?:piece|pcs?|nos?|no\.|pc|length|len)\b/i);
+  if(pmt) pieces=parseInt(pmt[1]);
+  var isArea=/plate|sheet|cheq|jali|ss plate|al plate/i.test(profile);
+  var amt2=txt.match(/(\d+(?:\.\d+)?)\s*(?:sqm|sq\s*m|m2)\b/i);
+  if(amt2) sqm=parseFloat(amt2[1]);
+  var aft2=txt.match(/(\d+(?:\.\d+)?)\s*(?:sqft|sq\s*ft|ft2)\b/i);
+  if(aft2) sqm=parseFloat(aft2[1])*0.0929;
+  var wh=txt.match(/(\d+(?:\.\d+)?)\s*m\s*[x*]\s*(\d+(?:\.\d+)?)\s*m/i);
+  if(wh) sqm=parseFloat(wh[1])*parseFloat(wh[2]);
+  var whft=txt.match(/(\d+(?:\.\d+)?)\s*(?:ft|feet)\s*[x*]\s*(\d+(?:\.\d+)?)\s*(?:ft|feet)/i);
+  if(whft) sqm=parseFloat(whft[1])*parseFloat(whft[2])*0.0929;
+
+  var kg=0;
+  if(isArea&&sqm>0) kg=sqm*kgPerM*pieces;
+  else if(lenM>0) kg=lenM*kgPerM*pieces;
+  else return {profile:profile,matKey:matKey,matRate:matRate,matLabel:matLabel,kgPerM:kgPerM,kg:0,pieces:pieces,len:0,sqm:0,note:'Enter length or area'};
+
+  kg=Math.round(kg*100)/100;
+  return {profile:profile,matKey:matKey,matRate:matRate,matLabel:matLabel,kgPerM:kgPerM,kg:kg,pieces:pieces,len:Math.round(lenM*1000)/1000,sqm:Math.round(sqm*100)/100,suggestedAmt:Math.round(kg*matRate)};
+}
+
+// ── DETECT INPUT TYPE
+function detectInputType(txt) {
+  var t=txt.trim();
+  // Math: has operator between numbers
+  if(/\d\s*[\*\/]\s*\d/.test(t)) return 'math';
+  if(/^\s*[\d\.\(\)\s\+\-\*\/]+\s*$/.test(t)) return 'math';
+  // Convert
+  if(/(feet|ft|meter|metre|inch|cm|mm|kg|ton|quintal|sqft|sqm)\s*(to|in|into|=)\s*(feet|ft|meter|metre|inch|cm|mm|kg|ton|quintal|sqft|sqm)/i.test(t)) return 'convert';
+  if(/^convert\s/i.test(t)) return 'convert';
+  // Weight — only if ONLY weight content, no client/project keywords
+  var hasClient=/client\s*[:=]|project\s*[:=]/i.test(t);
+  var hasExpense=/labour|transport|welding|majdoor|karigar/i.test(t);
+  if(!hasClient&&!hasExpense&&/(ismc\s*\d|ismb\s*\d|pipe\s+\d|plate\s+\d+\s*mm|\d+mm\s*plate|angle\s+\d+x)/i.test(t)) return 'weight';
+  return 'expense';
+}
+
+// ── HANDLE SPECIAL INPUTS
+function handleSpecialInput(txt, type) {
+  var res = {type:type, display:'', addItem:null};
+  if(type==='math'){
+    var clean=txt.replace(/[^0-9\.\+\-\*\/\(\)x]/gi,'');
+    var val=safeMath(clean);
+    if(val!==null){
+      res.display='= <strong>Rs.'+val.toLocaleString('en-IN')+'</strong>';
+      res.addItem={desc:'Calculation: '+txt.trim(),cat:'Other',amt:val};
+    } else res.display='Could not calculate. Check expression.';
+  }
+  else if(type==='convert'){
+    var vm=txt.match(/(\d+(?:\.\d+)?)\s*(feet|ft|meter|metre|m|inch|inches|cm|mm|kg|ton|quintal|sqft|sqm)/i);
+    var tm=txt.match(/(?:to|in|into|=)\s*(feet|ft|meter|metre|m|inch|inches|cm|mm|kg|ton|quintal|sqft|sqm)/i);
+    if(vm&&tm){
+      var val2=parseFloat(vm[1]),from=vm[2],to=tm[1];
+      var result=doConvert(val2,from,to);
+      if(result!==null) res.display=val2+' '+from+' = <strong>'+result+' '+to+'</strong>';
+      else res.display='Cannot convert '+from+' to '+to;
+    } else res.display='Format: "5 feet to meter"';
+  }
+  else if(type==='weight'){
+    var w=calcWeight(txt);
+    if(w&&w.error) { res.display='❌ '+w.msg; }
+    else if(w&&w.kg>0){
+      var dims=w.len?w.pieces+'pc × '+w.len+'m':(w.sqm?w.pieces+'pc × '+w.sqm+'m²':'');
+      var matBadge='<span style="background:'+(w.matKey==='ms'?'#dbeafe':w.matKey.includes('ss')?'#d1fae5':w.matKey==='aluminium'?'#fef3c7':'#ede9fe')+';color:#1e3a8a;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700">'+w.matLabel+'</span>';
+      res.display=matBadge+' <strong style="font-size:22px">'+w.kg+' kg</strong><br><small style="color:#64748b">'+w.profile+' | '+dims+' | '+w.kgPerM+' kg/m</small><br><small style="color:#059669;font-weight:600">Market rate ~Rs.'+w.matRate+'/kg → Suggested: Rs.'+fmt(w.suggestedAmt)+'</small>';
+      res.addItem={desc:w.profile+' '+dims,cat:'Material',amt:w.suggestedAmt,weight:w.kg,rate:w.matRate};
+    } else if(w&&w.kgPerM>0){
+      res.display='<strong>'+w.profile+'</strong> = '+w.kgPerM+' kg/m<br><small style="color:#059669">Rate ~Rs.'+w.matRate+'/kg ('+w.matLabel+')</small><br><small style="color:#64748b">'+(w.note||'Enter length to calculate weight')+'</small>';
+      res.addItem={desc:w.profile,cat:'Material',amt:0,weight:0,rate:w.matRate};
+    } else res.display='❌ Profile not found. Try: "ISMC 100 3m", "6mm plate 2sqm", "Pipe 2inch 5ft", "Angle 50x50x6 3m"';
+  }
+  return res;
+}
+
+
+// ── BILL / IMAGE READER
+function triggerBillRead() {
+  document.getElementById('bill-file').click();
+}
+
+function readBillFile(input) {
+  if(!input.files||!input.files[0]) return;
+  var file=input.files[0];
+  var isPDF=file.type==='application/pdf';
+  var isImage=file.type.startsWith('image/');
+  if(!isPDF&&!isImage){showToast('Please select an image or PDF','err');return;}
+  showToast('Reading file...','ok');
+
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var base64=e.target.result.split(',')[1];
+    var mediaType=file.type;
+    // Show loading modal
+    document.getElementById('prev-info-box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:36px;margin-bottom:10px">🔍</div><div style="font-size:15px;font-weight:600;color:#1e3a8a">Reading your bill...</div><div style="font-size:13px;color:#64748b;margin-top:6px">AI is extracting expense data</div></div>';
+    document.getElementById('prev-items-box').innerHTML='';
+    document.getElementById('prev-total-val').textContent='Please wait...';
+    document.querySelector('#mod-preview .brow').innerHTML='<button class="btn btn-ghost" onclick="resetPreviewBtns();closeMod(\'mod-preview\')">✕ Cancel</button>';
+    document.getElementById('mod-preview').classList.add('open');
+
+    // Call Claude API with image
+    fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        system:'You are a bill/invoice reader for Indian construction contractors. Extract ALL expense items from the image or document. Return ONLY valid JSON:\n{"client":"name or empty","desc":"work type or empty","profit":null,"advance":null,"items":[{"desc":"item description","cat":"Material|Labour|Transport|Consumables|Other","amt":number,"qty":"quantity if mentioned","unit":"unit if mentioned","rate":number_or_null}]}\nExtract every line item with amounts. Convert all amounts to numbers (no commas). If amount unclear put 0.',
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
+          {type:'text',text:'Extract all expense items from this bill/invoice/receipt. Return JSON only.'}
+        ]}]
+      })
+    })
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.error) throw new Error(data.error.message);
+      var text=data.content[0].text.trim().replace(/```json/g,'').replace(/```/g,'').trim();
+      var parsed=JSON.parse(text);
+      _preview=parsed;
+      // Show preview modal with bill data
+      document.getElementById('prev-info-box').innerHTML='<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;font-weight:600;color:#065f46">📷 Bill Read Successfully — Review &amp; Edit</div>'+(parsed.client?'<div class="prev-info"><div class="prev-info-title">Detected Info</div>'+(parsed.client?'<div class="prev-row"><span>Client</span><strong>'+parsed.client+'</strong></div>':'')+(parsed.desc?'<div class="prev-row"><span>Work</span><strong>'+parsed.desc+'</strong></div>':'')+'</div>':'');
+      renderPrevItems();
+      resetPreviewBtns();
+      showToast('Bill read! Review items.','ok');
+    })
+    .catch(function(err){
+      var isOffline=err.message&&(err.message.indexOf('fetch')>-1||err.message.indexOf('network')>-1||err.message.indexOf('Failed')>-1);
+      var msg='❌ Bill reading failed: '+(err.message||'Unknown error')+'. Make sure you have internet connection.';
+      document.getElementById('prev-info-box').innerHTML='<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:14px 16px;font-size:13px;color:#dc2626;line-height:1.6">'+msg+'</div>';
+      document.getElementById('prev-items-box').innerHTML='';
+      document.getElementById('prev-total-val').textContent='—';
+      resetPreviewBtns();
+    });
+  };
+  if(isImage) reader.readAsDataURL(file);
+  else reader.readAsDataURL(file); // PDF as base64 too
+  input.value=''; // reset so same file can be re-selected
+}
+
+// ── API KEY MANAGEMENT
+function getApiKey(){
+  return localStorage.getItem('vc_apikey')||'';
+}
+function saveApiKey(){
+  var k=document.getElementById('apikey-input').value.trim();
+  if(!k){showToast('Enter a valid key','err');return;}
+  localStorage.setItem('vc_apikey',k);
+  document.getElementById('mod-apikey').style.display='none';
+  showToast('API key saved!','ok');
+}
+function showApiKeyModal(){
+  document.getElementById('apikey-input').value=getApiKey();
+  document.getElementById('mod-apikey').style.display='flex';
+}
+function checkApiKey(){
+  if(!getApiKey()) showApiKeyModal();
+}
+
+// ── INIT
+window.onload = function() {
+  document.getElementById('date-chip').textContent = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  addRow('Material');
+  addRow('Labour');
+  renderDash();
+};
+
+// ── NAV
+function nav(page) {
+  var pages = ['dash','entry','projects','reports'];
+  for (var i = 0; i < pages.length; i++) {
+    document.getElementById('page-'+pages[i]).classList.remove('active');
+    document.getElementById('nav-'+pages[i]).classList.remove('active');
+  }
+  document.getElementById('proj-detail').style.display = 'none';
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  if (page === 'projects') renderProjects();
+  if (page === 'dash') renderDash();
+  if (page === 'reports') renderReports();
+  window.scrollTo(0,0);
+}
+
+// ── FILTER
+function setFilter(val, el) {
+  projFilter = val;
+  document.querySelectorAll('.fchip').forEach(function(c){ c.classList.remove('active'); });
+  el.classList.add('active');
+  renderProjects();
+}
+
+// ── TABLE
+function addRow(cat) {
+  var id = Date.now() + Math.floor(Math.random()*9999);
+  rows.push({id:id, desc:'', cat:cat||'Material', amt:''});
+  renderTable();
+}
+
+function delRow(id) {
+  rows = rows.filter(function(r){ return r.id != id; });
+  renderTable();
+}
+
+function updateDesc(id, val) {
+  for (var i=0;i<rows.length;i++) { if(rows[i].id==id){rows[i].desc=val;break;} }
+}
+
+function updateAmt(id, val) {
+  for (var i=0;i<rows.length;i++) { if(rows[i].id==id){rows[i].amt=val;break;} }
+  recalc();
+}
+
+function updateRate(id, rate) {
+  for (var i=0;i<rows.length;i++) {
+    if(rows[i].id==id){
+      rows[i].rate=rate;
+      var kg=parseFloat(rows[i].weight)||0;
+      var r=parseFloat(rate)||0;
+      if(kg>0&&r>0){
+        var amt=Math.round(kg*r);
+        rows[i].amt=String(amt);
+        // Update the amount input directly
+        var amtEl=document.getElementById('amt-'+id);
+        if(amtEl) amtEl.value=amt;
+        recalc();
+      }
+      break;
+    }
+  }
+}
+
+function renderTable() {
+  var html = '';
+  for (var i=0;i<rows.length;i++) {
+    var r = rows[i];
+    html += '<tr>';
+    html += '<td class="c" style="color:#94a3b8;font-size:12px">'+(i+1)+'</td>';
+    html += '<td>';
+    html += '<input type="text" value="'+sv(r.desc)+'" placeholder="Item description" onchange="updateDesc('+r.id+',this.value)">';
+    // Show weight badge if available
+    if(r.weight&&parseFloat(r.weight)>0){
+      html += '<div style="margin-top:4px;display:flex;align-items:center;gap:6px">';
+      html += '<span style="font-size:11px;background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-weight:600">⚖️ '+r.weight+' kg</span>';
+      html += '<input type="number" value="'+(r.rate||'')+'" placeholder="Rate/kg" style="width:90px;border:1px solid #bfdbfe;border-radius:6px;padding:4px 8px;font-size:12px;color:#1e3a8a;background:#eff6ff;outline:none" oninput="updateRate('+r.id+',this.value)" title="Rate per kg">';
+      html += '</div>';
+    }
+    html += '</td>';
+    html += '<td class="r"><input type="number" value="'+sv(r.amt)+'" placeholder="0" min="0" id="amt-'+r.id+'" onchange="updateAmt('+r.id+',this.value)"></td>';
+    html += '<td class="c"><button class="del-btn" onclick="delRow('+r.id+')">✕</button></td>';
+    html += '</tr>';
+  }
+  document.getElementById('exp-body').innerHTML = html;
+  recalc();
+}
+
+// ── CALC
+function recalc() {
+  var cost=0;
+  for(var i=0;i<rows.length;i++) cost+=parseFloat(rows[i].amt)||0;
+  var pct=parseFloat(document.getElementById('f-pct').value)||0;
+  var profit=cost*pct/100;
+  var total=cost+profit;
+  var adv=parseFloat(document.getElementById('f-adv').value)||0;
+  var bal=total-adv;
+  document.getElementById('fc-cost').textContent=fmt(cost);
+  document.getElementById('sv-cost').textContent=fmt(cost);
+  document.getElementById('sv-profit').textContent=fmt(profit);
+  document.getElementById('sv-total').textContent=fmt(total);
+  document.getElementById('sv-bal').textContent=fmt(bal);
+}
+
+function onSlider(el) {
+  document.getElementById('f-pct').value=el.value;
+  document.getElementById('pct-lbl').textContent=el.value+'%';
+  recalc();
+}
+
+function onPct(el) {
+  var v=parseFloat(el.value)||0;
+  document.getElementById('f-range').value=Math.min(v,200);
+  document.getElementById('pct-lbl').textContent=v+'%';
+  recalc();
+}
+
+// ── SMART INPUT
+function setEg(txt) { document.getElementById('ai-txt').value=txt; }
+
+function getCat(word) { return CMAP[word.toLowerCase()]||'Material'; }
+
+function offlineParse(txt) {
+  var result={client:'',desc:'',items:[],profit:null,advance:null,mode:'new',removes:[],dateContext:null};
+
+  // ── Mode detection
+  if(/\bremove\b|\bdelete\b|\bhatao\b/i.test(txt)){
+    result.mode='remove';
+    var rm=txt.match(/(?:remove|delete|hatao)\s+(.+)/i);
+    if(rm) result.removes=[rm[1].trim()];
+    return result;
+  }
+  if(/\badd\s*to\b/i.test(txt)) result.mode='add';
+
+  // ── Extract structured labels first: client: X, project: Y
+  var clM=txt.match(/(?:new\s+)?client\s*[:=\-]\s*([^,.\n]+)/i);
+  if(clM){result.client=clM[1].trim().split(/\s+(?:project|work|desc)\s*[:=]/i)[0].trim();txt=txt.replace(clM[0],' ');}
+
+  var prM=txt.match(/(?:project|work|desc|kaam)\s*[:=\-]\s*([^,.\n]+)/i);
+  if(prM){result.desc=prM[1].trim().split(/\s+\d/)[0].trim();txt=txt.replace(prM[0],' ');}
+
+  // ── Extract profit %
+  var pm=txt.match(/(\d+(?:\.\d+)?)\s*%/);
+  if(pm){result.profit=parseFloat(pm[1]);txt=txt.replace(pm[0],' ');}
+
+  // ── Extract advance (many patterns)
+  var am=txt.match(/advance\s*(?:received|paid|diya|liya|mila|aaya)?\s*(?:yesterday|today|kal|aaj)?\s*[:=]?\s*(\d+)/i)
+    ||txt.match(/(\d+)\s*(?:advance|bayana)/i)
+    ||txt.match(/(?:received|paid|diya|liya|mila|aaya)\s*(?:yesterday|today)?\s*(\d+)/i);
+  if(am){var av=parseInt(am[1]||am[2]||am[3]);if(!isNaN(av)){result.advance=av;txt=txt.replace(am[0],' ');}}
+
+  // ── Date context
+  if(/\byesterday\b|\bkal\b/i.test(txt)) result.dateContext='yesterday';
+
+  // ── Strip intent prefix
+  txt=txt.replace(/^\s*(add\s*to|add|new\s+client|new|please|kindly)\s*/i,'').trim();
+
+  // ── Normalize
+  txt=txt.replace(/rs\.?\s*(\d)/gi,'$1').replace(/(\d)\s*rs\.?/gi,'$1').replace(/\s+/g,' ').trim();
+
+  // ── Split into item segments by comma, semicolon, period, ' - '
+  var segs=txt.split(/[,;]|\s+-\s+|\.\s+/).map(function(s){return s.trim();}).filter(function(s){return s.length>1;});
+
+  var NOISE=['add','remove','a','an','the','is','are','was','in','at','for','of','and','or','with','by','from','to','into','on','rs','rupee','rupees','inr','project','bhai','ji','sir','me','mein','ka','ki','ke','ko','se','liye','kaam','work','light','heavy','small','big','total','bill','amount','rate','per','unit','new','client','nos','no','pc','pcs','piece','pieces','ms','ss','gi','yesterday','today','received','paid'];
+  function isNoise(w){return NOISE.indexOf(w.toLowerCase().replace(/[^a-z]/g,''))>-1;}
+
+  var WEIGHT_KEYS=['plate','sheet','ismc','ismb','pipe','angle','flat','patti','rod','round','square','channel','beam','hollow','sqpipe','cheq','chequered','jali','gi pipe','ss plate','al plate'];
+  function isWeightSeg(s){var sl=s.toLowerCase();for(var i=0;i<WEIGHT_KEYS.length;i++){if(sl.indexOf(WEIGHT_KEYS[i])>-1)return true;}return false;}
+
+  var items=[];
+
+  for(var si=0;si<segs.length;si++){
+    var seg=segs[si];
+    if(!seg) continue;
+
+    if(isWeightSeg(seg)){
+      // Pass to calcWeight — it handles dimensions
+      var w=calcWeight(seg);
+      if(w&&!w.error){
+        var dims=w.len?w.pieces+'pc×'+w.len+'m':(w.sqm?w.pieces+'pc×'+w.sqm+'m²':'');
+        var desc2=(w.profile+(dims?' '+dims:''));
+        items.push({desc:desc2,cat:'Material',amt:w.kg>0?w.suggestedAmt:0,weight:w.kg,rate:w.matRate,kgPerM:w.kgPerM,isWeight:true});
+      } else {
+        // Weight calc failed — add as plain material item
+        items.push({desc:seg.trim(),cat:'Material',amt:0});
+      }
+      continue;
+    }
+
+    // Standard token parse for this segment
+    var tokens=seg.split(/\s+/).filter(Boolean);
+    var used={};
+
+    for(var ti=0;ti<tokens.length;ti++){
+      if(used[ti]) continue;
+      var num=parseFloat(tokens[ti].replace(/[^\d.]/g,''));
+      var isNum=!isNaN(num)&&num>0&&/^\d/.test(tokens[ti]);
+      if(!isNum) continue;
+
+      var dw='';
+      // Look behind
+      for(var b=ti-1;b>=Math.max(0,ti-2);b--){
+        if(used[b]) break;
+        var bw=tokens[b].toLowerCase().replace(/[^a-z]/g,'');
+        if(!bw||isNoise(tokens[b])){used[b]=true;continue;}
+        if(/^\d/.test(tokens[b])) break;
+        dw=tokens[b]; used[b]=true; break;
+      }
+      // Look ahead
+      if(!dw){
+        for(var f=ti+1;f<Math.min(tokens.length,ti+3);f++){
+          if(used[f]) break;
+          var fw=tokens[f]?tokens[f].toLowerCase().replace(/[^a-z]/g,''):'';
+          if(!fw||isNoise(tokens[f])){used[f]=true;continue;}
+          if(/^\d/.test(tokens[f])) break;
+          dw=tokens[f]; used[f]=true; break;
+        }
+      }
+      used[ti]=true;
+      if(dw){
+        var cat=CMAP[dw.toLowerCase()]||'Other';
+        items.push({desc:dw,cat:cat,amt:Math.round(num)});
+      }
+    }
+
+    // Unpaired item keywords
+    var tokens2=seg.split(/\s+/).filter(Boolean);
+    var allNums=seg.match(/\d+/g)||[];
+    if(!allNums.length){
+      for(var ui=0;ui<tokens2.length;ui++){
+        var uw=tokens2[ui].toLowerCase();
+        if(CMAP[uw]&&!isNoise(tokens2[ui])){
+          items.push({desc:tokens2[ui],cat:CMAP[uw],amt:0}); break;
+        }
+      }
+    }
+  }
+
+  // ── If no client yet, find first reasonable word
+  if(!result.client && result.mode==='new'){
+    var allToks=txt.split(/\s+/).filter(Boolean);
+    for(var ci=0;ci<Math.min(allToks.length,6);ci++){
+      var cw2=allToks[ci].toLowerCase().replace(/[^a-z]/g,'');
+      if(!cw2||cw2.length<3||isNoise(allToks[ci])||CMAP[cw2]||/^\d/.test(allToks[ci])) continue;
+      result.client=allToks[ci]; break;
+    }
+  }
+
+  result.items=items;
+  return result;
+}
+
+function smartParse() {
+  var txt=document.getElementById('ai-txt').value.trim();
+  if(!txt){showToast('Type something first','err');return;}
+
+  // Check for special input types first (math/weight/convert)
+  var inputType=detectInputType(txt);
+  if(inputType!=='expense'){
+    var sp=handleSpecialInput(txt,inputType);
+    showSpecialResult(sp,txt);
+    return;
+  }
+
+  var btn=document.getElementById('parse-btn');
+  btn.disabled=true; btn.textContent='⏳ Understanding...';
+  // Use smart offline parser directly — fast and works everywhere
+  setTimeout(function(){
+    btn.disabled=false; btn.textContent='⚡ Understand & Preview';
+    _preview=offlineParse(txt);
+    showPreviewModal(_preview);
+    showToast('✅ Understood!','ok');
+  },400);
+}
+
+function showPreviewModal(p) {
+  // Show mode label
+  var modeLabel = p.mode==='add' ? '➕ Adding to current project' : p.mode==='remove' ? '🗑 Removing from table' : '🆕 New project detected';
+  var infoHtml='<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:13px;font-weight:600;color:#065f46">'+modeLabel+'</div>';
+
+  if(p.mode==='remove' && p.removes && p.removes.length){
+    infoHtml+='<div class="prev-info"><div class="prev-info-title">Will Remove</div>';
+    infoHtml+='<div class="prev-row"><span>Rows matching</span><strong>'+p.removes[0]+'</strong></div>';
+    infoHtml+='</div>';
+    document.getElementById('prev-info-box').innerHTML=infoHtml;
+    document.getElementById('prev-items-box').innerHTML='';
+    document.getElementById('prev-total-val').textContent='—';
+    document.getElementById('mod-preview').classList.add('open');
+    return;
+  }
+
+  if(p.client||p.desc||p.profit!==null||p.advance!==null){
+    infoHtml+='<div class="prev-info"><div class="prev-info-title">Project Info</div>';
+    if(p.client)infoHtml+='<div class="prev-row"><span>Client</span><strong>'+p.client+'</strong></div>';
+    if(p.desc)infoHtml+='<div class="prev-row"><span>Work</span><strong>'+p.desc+'</strong></div>';
+    if(p.profit!==null)infoHtml+='<div class="prev-row"><span>Profit %</span><strong>'+p.profit+'%</strong></div>';
+    if(p.advance!==null)infoHtml+='<div class="prev-row"><span>Advance</span><strong>Rs.'+fmt(p.advance)+'</strong></div>';
+    infoHtml+='</div>';
+  }
+  document.getElementById('prev-info-box').innerHTML=infoHtml;
+  renderPrevItems();
+  document.getElementById('mod-preview').classList.add('open');
+}
+
+function renderPrevItems() {
+  if(!_preview)return;
+  var items=_preview.items||[];
+  var html='';
+  for(var i=0;i<items.length;i++){
+    var it=items[i];
+    html+='<div class="prev-item" style="flex-wrap:wrap;gap:4px">';
+    html+='<input type="text" value="'+sv(it.desc)+'" placeholder="Item" style="flex:1;min-width:110px" oninput="_preview.items['+i+'].desc=this.value">';
+    html+='<input type="number" value="'+(it.amt||0)+'" placeholder="0" style="width:90px" oninput="_preview.items['+i+'].amt=parseInt(this.value)||0">';
+    html+='<button class="prev-rm" onclick="rmPrevItem('+i+')">✕</button>';
+    if(it.isWeight&&it.weight>0){
+      html+='<div style="width:100%;font-size:11px;padding:2px 0 4px 2px;color:#1d4ed8">⚖️ '+it.weight+' kg · Rs.'+(it.rate||'?')+'/kg · Suggested: <strong>Rs.'+fmt(it.amt||0)+'</strong></div>';
+    }
+    html+='</div>';
+  }
+  if(!items.length) html='<div style="text-align:center;color:#94a3b8;padding:16px;font-size:14px">No items found — add manually below</div>';
+  document.getElementById('prev-items-box').innerHTML=html;
+  var total=0;
+  for(var j=0;j<items.length;j++) total+=parseFloat(items[j].amt)||0;
+  document.getElementById('prev-total-val').textContent='Rs.'+fmt(total);
+}
+
+function rmPrevItem(i) {
+  _preview.items.splice(i,1);
+  renderPrevItems();
+}
+
+function acceptPreview() {
+  if(!_preview) return;
+  var p=_preview;
+
+  // REMOVE mode — delete matching rows
+  if(p.mode==='remove' && p.removes && p.removes.length) {
+    var rm=p.removes[0].toLowerCase();
+    rows=rows.filter(function(r){ return r.desc.toLowerCase().indexOf(rm)===-1; });
+    renderTable();
+    closeMod('mod-preview');
+    document.getElementById('ai-txt').value='';
+    _preview=null;
+    showToast('Removed rows matching: '+p.removes[0],'ok');
+    return;
+  }
+
+  // ADD mode — append items to existing rows
+  if(p.mode==='add') {
+    for(var i=0;i<(p.items||[]).length;i++){
+      var it=p.items[i];
+      rows.push({id:Date.now()+i,desc:it.desc,cat:it.cat||'Other',amt:String(it.amt||0)});
+    }
+    renderTable();
+    closeMod('mod-preview');
+    document.getElementById('ai-txt').value='';
+    _preview=null;
+    showToast('Added '+p.items.length+' item(s) to table','ok');
+    return;
+  }
+
+  // NEW PROJECT mode — check if client already exists
+  var clientName = p.client ? p.client.toLowerCase() : '';
+  var existingProj = null;
+  if(clientName){
+    for(var k=0;k<projects.length;k++){
+      if(projects[k].client && projects[k].client.toLowerCase()===clientName){
+        existingProj=projects[k]; break;
+      }
+    }
+  }
+
+  // If only advance info (no items, has advance) — update existing project advance
+  if(existingProj && p.advance!==null && (!p.items||p.items.length===0)){
+    existingProj.advance=(existingProj.advance||0)+p.advance;
+    // Update status if fully paid
+    var ec=calcProj(existingProj);
+    if(ec.bal<=0) existingProj.status='Paid';
+    else if(existingProj.advance>0) existingProj.status='Partial';
+    // Handle date context
+    if(p.dateContext==='yesterday'){
+      var yd=new Date(); yd.setDate(yd.getDate()-1);
+      existingProj.lastPaymentDate=yd.toISOString().split('T')[0];
+    }
+    localStorage.setItem('vc_p',JSON.stringify(projects));
+    closeMod('mod-preview');
+    document.getElementById('ai-txt').value='';
+    _preview=null;
+    var newBal=calcProj(existingProj).bal;
+    showToast('Advance Rs.'+fmt(p.advance)+' added! Balance: Rs.'+fmt(newBal),'ok');
+    renderDash();
+    return;
+  }
+
+  // If client exists and has items — ask user what to do
+  if(existingProj && p.items && p.items.length>0){
+    _pendingPreview=p;
+    _pendingExisting=existingProj;
+    closeMod('mod-preview');
+    showClientChoiceModal(existingProj, p);
+    return;
+  }
+
+  // No existing client — fill form as new project
+  fillFormFromPreview(p);
+}
+
+var _pendingPreview=null, _pendingExisting=null;
+
+function showClientChoiceModal(existing, preview){
+  var c=calcProj(existing);
+  var html='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;margin-bottom:14px">';
+  html+='<div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:6px">Existing project found:</div>';
+  html+='<div style="font-size:15px;font-weight:800;color:#1e3a8a">'+existing.client+'</div>';
+  html+='<div style="font-size:13px;color:#64748b;margin-top:2px">'+(existing.desc||'No description')+'</div>';
+  html+='<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px">';
+  html+='<span style="color:#64748b">Current Total</span><strong>Rs.'+fmt(c.total)+'</strong></div>';
+  html+='<div style="display:flex;justify-content:space-between;font-size:13px">';
+  html+='<span style="color:#64748b">Balance Due</span><strong style="color:'+(c.bal>0?'#d97706':'#059669')+'">Rs.'+fmt(c.bal)+'</strong></div>';
+  html+='</div>';
+  html+='<div style="font-size:13px;color:#475569;margin-bottom:12px">New items to add: <strong>'+preview.items.length+' item(s)</strong>, Total: <strong>Rs.'+fmt(preview.items.reduce(function(s,i){return s+(parseFloat(i.amt)||0);},0))+'</strong></div>';
+  document.getElementById('choice-body').innerHTML=html;
+  document.getElementById('mod-choice').classList.add('open');
+}
+
+function choiceAddToExisting(){
+  if(!_pendingPreview||!_pendingExisting) return;
+  // Add items to existing project
+  var p=_pendingPreview;
+  for(var i=0;i<(p.items||[]).length;i++){
+    var it=p.items[i];
+    _pendingExisting.rows.push({id:Date.now()+i,desc:it.desc,cat:it.cat||'Material',amt:String(it.amt||0)});
+  }
+  if(p.advance!==null) _pendingExisting.advance=(_pendingExisting.advance||0)+p.advance;
+  localStorage.setItem('vc_p',JSON.stringify(projects));
+  closeMod('mod-choice');
+  document.getElementById('ai-txt').value='';
+  _pendingPreview=null; _pendingExisting=null;
+  showToast('Items added to existing project!','ok');
+  renderDash();
+  nav('projects');
+}
+
+function choiceCreateNew(){
+  if(!_pendingPreview) return;
+  var p=_pendingPreview;
+  closeMod('mod-choice');
+  fillFormFromPreview(p);
+  _pendingPreview=null; _pendingExisting=null;
+}
+
+function fillFormFromPreview(p){
+  if(p.client) document.getElementById('f-client').value=p.client;
+  if(p.desc) document.getElementById('f-desc').value=p.desc;
+  if(p.profit!==null){
+    document.getElementById('f-pct').value=p.profit;
+    document.getElementById('f-range').value=Math.min(p.profit,200);
+    document.getElementById('pct-lbl').textContent=p.profit+'%';
+  }
+  if(p.advance!==null) document.getElementById('f-adv').value=p.advance;
+  rows=[];
+  for(var j=0;j<(p.items||[]).length;j++){
+    var jt=p.items[j];
+    rows.push({id:Date.now()+j,desc:jt.desc,cat:jt.cat||'Material',amt:String(jt.amt||0)});
+  }
+  if(!rows.length){addRow('Material');addRow('Labour');}
+  renderTable();
+  document.getElementById('ai-txt').value='';
+  _preview=null;
+  showToast('Form filled! Review and save.','ok');
+  nav('entry');
+}
+
+
+function showSpecialResult(sp, originalTxt) {
+  var icons={math:'🧮',convert:'📐',weight:'⚖️'};
+  var labels={math:'Math Result',convert:'Unit Conversion',weight:'⚖️ Weight Calculation'};
+  var rateNote=type==='weight'?'<div style="font-size:11px;color:#64748b;margin-top:4px">Rates: MS~₹58 | SS304~₹190 | SS202~₹130 | SS316~₹260 | Al~₹180 | GI~₹75/kg</div>':'';
+  var infoHtml='<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;font-weight:600;color:#065f46">'+icons[sp.type]+' '+(labels[sp.type]||sp.type)+'</div>';
+  infoHtml+='<div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:12px;text-align:center;font-size:20px;color:#1e3a8a;line-height:1.6">'+sp.display+'</div>'+(rateNote||'');
+  document.getElementById('prev-info-box').innerHTML=infoHtml;
+
+  if(sp.addItem){
+    var it=sp.addItem;
+    var isWeight=(sp.type==='weight');
+    var html='';
+    // Description row
+    html+='<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Description</div>';
+    html+='<input type="text" id="sp-desc" value="'+sv(it.desc)+'" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fafbfc;outline:none;font-family:sans-serif"></div>';
+    // Weight row (only for weight type)
+    if(isWeight&&it.weight>0){
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+      html+='<div><div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Weight (kg)</div>';
+      html+='<input type="number" id="sp-kg" value="'+it.weight+'" style="width:100%;padding:10px 12px;border:1.5px solid #bfdbfe;border-radius:10px;font-size:14px;color:#1e3a8a;background:#eff6ff;outline:none;font-family:sans-serif" oninput="calcRateAmt()"></div>';
+      html+='<div><div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Rate per kg (Rs.)</div>';
+      html+='<input type="number" id="sp-rate" value="" placeholder="e.g. 70" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fafbfc;outline:none;font-family:sans-serif" oninput="calcRateAmt()"></div>';
+      html+='</div>';
+    }
+    // Amount row
+    html+='<div><div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">Amount (Rs.)</div>';
+    html+='<input type="number" id="sp-amt" value="'+(it.amt||'')+'" placeholder="Enter amount or fill rate above" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;font-weight:700;color:#1e3a8a;background:#fafbfc;outline:none;font-family:sans-serif"></div>';
+    document.getElementById('prev-items-box').innerHTML=html;
+    document.getElementById('prev-total-val').textContent='Fill amount above';
+  } else {
+    document.getElementById('prev-items-box').innerHTML='';
+    document.getElementById('prev-total-val').textContent='—';
+  }
+
+  document.querySelector('#mod-preview .brow').innerHTML=
+    '<button class="btn btn-ghost" onclick="resetPreviewBtns();closeMod(\'mod-preview\')">✕ Close</button>'+
+    (sp.addItem?'<button class="btn btn-blue" onclick="addSpecialToTable()">➕ Add to Table</button>':'');
+  document.getElementById('mod-preview').classList.add('open');
+  document.getElementById('ai-txt').value='';
+}
+
+function calcRateAmt() {
+  var kg=parseFloat(document.getElementById('sp-kg')?document.getElementById('sp-kg').value:0)||0;
+  var rate=parseFloat(document.getElementById('sp-rate')?document.getElementById('sp-rate').value:0)||0;
+  if(kg>0&&rate>0){
+    document.getElementById('sp-amt').value=Math.round(kg*rate);
+    document.getElementById('prev-total-val').textContent='Rs.'+fmt(Math.round(kg*rate));
+  }
+}
+
+function addSpecialToTable() {
+  var descEl=document.getElementById('sp-desc');
+  var amtEl=document.getElementById('sp-amt');
+  var kgEl=document.getElementById('sp-kg');
+  var rateEl=document.getElementById('sp-rate');
+  if(!descEl) return;
+  var desc=descEl.value||'Item';
+  var amt=parseFloat(amtEl?amtEl.value:0)||0;
+  var kg=parseFloat(kgEl?kgEl.value:0)||0;
+  var rate=parseFloat(rateEl?rateEl.value:0)||0;
+  // Auto-calc if rate and kg filled but amt not updated
+  if(kg>0&&rate>0&&amt===0) amt=Math.round(kg*rate);
+  rows.push({id:Date.now(),desc:desc,cat:'Material',amt:String(amt),weight:kg,rate:rate});
+  renderTable();
+  resetPreviewBtns();
+  closeMod('mod-preview');
+  showToast(kg>0?'Added '+kg+'kg to table!':'Added to table!','ok');
+  nav('entry');
+}
+
+function resetPreviewBtns(){
+  var brow=document.querySelector('#mod-preview .brow');
+  if(brow) brow.innerHTML='<button class="btn btn-ghost" onclick="closeMod(\'mod-preview\')">✏️ Edit</button><button class="btn btn-blue" onclick="acceptPreview()">✅ Fill Form</button>';
+}
+
+// ── SUMMARY POPUP
+function showSummaryPopup() {
+  var client=document.getElementById('f-client').value.trim();
+  if(!client){showToast('Enter client name first','err');return;}
+  var cost=0;
+  for(var i=0;i<rows.length;i++) cost+=parseFloat(rows[i].amt)||0;
+  var pct=parseFloat(document.getElementById('f-pct').value)||0;
+  var profit=cost*pct/100;
+  var total=cost+profit;
+  var adv=parseFloat(document.getElementById('f-adv').value)||0;
+  var bal=total-adv;
+
+  var html='';
+  html+='<div class="sum-popup-row"><span style="color:#64748b">Client</span><strong>'+client+'</strong></div>';
+  var desc=document.getElementById('f-desc').value.trim();
+  if(desc) html+='<div class="sum-popup-row"><span style="color:#64748b">Work</span><strong>'+desc+'</strong></div>';
+  html+='<div class="sum-popup-row"><span style="color:#64748b">Status</span><strong>'+document.getElementById('f-status').value+'</strong></div>';
+  html+='<div style="margin:12px 0 6px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.8px">Items ('+rows.length+')</div>';
+  for(var j=0;j<rows.length;j++){
+    var r=rows[j];
+    if(!r.desc&&!r.amt)continue;
+    html+='<div class="sum-popup-row"><span>'+(r.desc||'Item '+(j+1))+'</span><span>Rs.'+fmt(parseFloat(r.amt)||0)+'</span></div>';
+  }
+  html+='<div style="margin-top:12px;border-top:2px solid #e2e8f0;padding-top:10px">';
+  html+='<div class="sum-popup-row"><span style="color:#64748b">Total Cost</span><span>Rs.'+fmt(cost)+'</span></div>';
+  html+='<div class="sum-popup-row"><span style="color:#64748b">Profit ('+pct+'%)</span><span style="color:#059669">Rs.'+fmt(profit)+'</span></div>';
+  html+='<div class="sum-popup-row big"><span>Grand Total</span><span>Rs.'+fmt(total)+'</span></div>';
+  if(adv>0) html+='<div class="sum-popup-row"><span style="color:#64748b">Advance</span><span>Rs.'+fmt(adv)+'</span></div>';
+  if(bal>0) html+='<div class="sum-popup-row due"><span>Balance Due</span><span>Rs.'+fmt(bal)+'</span></div>';
+  html+='</div>';
+
+  document.getElementById('summary-content').innerHTML=html;
+  document.getElementById('mod-summary').classList.add('open');
+}
+
+function confirmSave() {
+  closeMod('mod-summary');
+  saveProject();
+}
+
+// ── SAVE
+function saveProject() {
+  var client=document.getElementById('f-client').value.trim();
+  if(!client){showToast('Enter client name','err');return;}
+  var pct=parseFloat(document.getElementById('f-pct').value)||0;
+  var adv=parseFloat(document.getElementById('f-adv').value)||0;
+  var p={
+    id:editId||Date.now(),
+    client:client,
+    desc:document.getElementById('f-desc').value.trim(),
+    date:document.getElementById('f-date').value,
+    notes:document.getElementById('f-notes').value.trim(),
+    status:document.getElementById('f-status').value,
+    profit:pct, advance:adv,
+    rows:JSON.parse(JSON.stringify(rows))
+  };
+  if(editId){
+    for(var i=0;i<projects.length;i++){if(projects[i].id===editId){projects[i]=p;break;}}
+  } else {
+    projects.push(p);
+  }
+  localStorage.setItem('vc_p',JSON.stringify(projects));
+  showToast('Project saved!','ok');
+  clearEntry();
+  nav('projects');
+}
+
+// ── LOAD / DELETE
+function loadProject(id) {
+  var p=null;
+  for(var i=0;i<projects.length;i++){if(projects[i].id==id){p=projects[i];break;}}
+  if(!p)return;
+  editId=p.id;
+  document.getElementById('f-client').value=p.client||'';
+  document.getElementById('f-desc').value=p.desc||'';
+  document.getElementById('f-date').value=p.date||'';
+  document.getElementById('f-notes').value=p.notes||'';
+  document.getElementById('f-status').value=p.status||'Pending';
+  document.getElementById('f-pct').value=p.profit||20;
+  document.getElementById('f-range').value=Math.min(p.profit||20,200);
+  document.getElementById('pct-lbl').textContent=(p.profit||20)+'%';
+  document.getElementById('f-adv').value=p.advance||0;
+  rows=JSON.parse(JSON.stringify(p.rows||[]));
+  renderTable();
+  nav('entry');
+  showToast('Loaded for editing','ok');
+}
+
+function deleteProject(id) {
+  projects=projects.filter(function(x){return x.id!=id;});
+  localStorage.setItem('vc_p',JSON.stringify(projects));
+  renderProjects();
+  renderDash();
+  showToast('Deleted','ok');
+}
+
+function clearEntry() {
+  editId=null;
+  document.getElementById('f-client').value='';
+  document.getElementById('f-desc').value='';
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-notes').value='';
+  document.getElementById('f-status').value='Pending';
+  document.getElementById('f-pct').value=20;
+  document.getElementById('f-range').value=20;
+  document.getElementById('pct-lbl').textContent='20%';
+  document.getElementById('f-adv').value=0;
+  rows=[];
+  addRow('Material');
+  addRow('Labour');
+}
+
+// ── CALC PER PROJECT
+function calcProj(p) {
+  var cost=0;
+  var r=p.rows||[];
+  for(var i=0;i<r.length;i++) cost+=parseFloat(r[i].amt)||0;
+  var profit=cost*(p.profit||0)/100;
+  var total=cost+profit;
+  var bal=total-(p.advance||0);
+  return{cost:cost,profit:profit,total:total,bal:bal};
+}
+
+// ── DASHBOARD
+function renderDash() {
+  var total=projects.length,paid=0,pendBal=0,monthTot=0;
+  var now=new Date(),cy=now.getFullYear(),cm=now.getMonth();
+  for(var i=0;i<projects.length;i++){
+    var p=projects[i];
+    var c=calcProj(p);
+    if(p.status==='Paid')paid++;
+    if(c.bal>0)pendBal+=c.bal;
+    var pd=new Date(p.date);
+    if(pd.getFullYear()===cy&&pd.getMonth()===cm)monthTot+=c.total;
+  }
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-paid').textContent=paid;
+  document.getElementById('s-bal').innerHTML='<small>Rs.</small>'+fmt(pendBal);
+  document.getElementById('s-month').innerHTML='<small>Rs.</small>'+fmt(monthTot);
+
+  var recent=projects.slice().reverse().slice(0,6);
+  if(!recent.length){
+    document.getElementById('dash-recent').innerHTML='<div style="text-align:center;padding:24px;color:#94a3b8;font-size:14px">No projects yet. <span style="color:#2563eb;cursor:pointer" onclick="nav(\'entry\')">Add your first →</span></div>';
+    return;
+  }
+  // Group by client
+  var rG={},rO=[];
+  for(var ri=0;ri<recent.length;ri++){
+    var rk=(recent[ri].client||'Unknown').toLowerCase();
+    if(!rG[rk]){rG[rk]=[];rO.push(rk);}
+    rG[rk].push(recent[ri]);
+  }
+  var html='<div class="proj-grid">';
+  for(var rgi=0;rgi<rO.length;rgi++){
+    var rgk=rO[rgi],rgl=rG[rgk],rcN=rgl[0].client||'Unknown';
+    var rgT=0,rgB=0;
+    for(var rj=0;rj<rgl.length;rj++){var rgc=calcProj(rgl[rj]);rgT+=rgc.total;rgB+=rgc.bal;}
+    if(rgl.length>1){
+      html+='<div style="grid-column:span 2;background:linear-gradient(135deg,#1e3a8a,#2563eb);border-radius:12px;padding:10px 14px;margin-top:4px;display:flex;justify-content:space-between;align-items:center">';
+      html+='<div><div style="color:white;font-size:14px;font-weight:800">'+rcN+'</div><div style="color:#93c5fd;font-size:11px">'+rgl.length+' projects</div></div>';
+      html+='<div style="text-align:right"><div style="color:white;font-size:15px;font-weight:800">Rs.'+fmt(rgT)+'</div><div style="color:'+(rgB>0?'#fbbf24':'#6ee7b7')+';font-size:11px">'+(rgB>0?'Due Rs.'+fmt(rgB):'All Paid ✓')+'</div></div></div>';
+    }
+    for(var rpj=0;rpj<rgl.length;rpj++){
+      var rp=rgl[rpj],rc=calcProj(rp);
+      var rsc=rp.status==='Paid'?'paid':rp.status==='Partial'?'partial':'pending';
+      html+='<div class="proj-card '+rsc+'" onclick="openDetail('+rp.id+')">';
+      html+='<span class="pc-badge '+rsc+'">'+(rp.status||'Pending')+'</span>';
+      html+='<div class="pc-client">'+(rgl.length>1?(cleanDesc(rp.desc)||'Project '+(rpj+1)):rcN)+'</div>';
+      if(rgl.length===1) html+='<div class="pc-desc">'+(cleanDesc(rp.desc)||'—')+'</div>';
+      html+='<div class="pc-total">Rs.'+fmt(rc.total)+'</div>';
+      html+='<div class="pc-total-lbl">Grand Total</div>';
+      if(rc.bal>0)html+='<div class="pc-bal due">Due Rs.'+fmt(rc.bal)+'</div>';
+      else html+='<div class="pc-bal clear">Paid ✓</div>';
+      html+='<div class="pc-date">'+fmtDate(rp.date)+'</div></div>';
+    }
+  }
+  html+='</div>';
+  document.getElementById('dash-recent').innerHTML=html;
+}
+
+// ── PROJECTS GRID (grouped by client)
+function renderProjects() {
+  var list=projects.slice().reverse().filter(function(p){return !projFilter||p.status===projFilter;});
+  if(!list.length){
+    document.getElementById('proj-grid').innerHTML='<div class="empty"><div class="empty-ico">📋</div><p>No projects yet.</p></div>';
+    return;
+  }
+
+  // Group by client name
+  var groups={}, groupOrder=[];
+  for(var i=0;i<list.length;i++){
+    var key=(list[i].client||'Unknown').toLowerCase();
+    if(!groups[key]){groups[key]=[];groupOrder.push(key);}
+    groups[key].push(list[i]);
+  }
+
+  var html='';
+  for(var gi=0;gi<groupOrder.length;gi++){
+    var gkey=groupOrder[gi];
+    var glist=groups[gkey];
+    var clientName=glist[0].client||'Unknown';
+
+    // Calculate group totals
+    var gTotal=0,gBal=0;
+    for(var gj=0;gj<glist.length;gj++){var gc=calcProj(glist[gj]);gTotal+=gc.total;gBal+=gc.bal;}
+
+    // Show group header only if more than 1 project for this client
+    if(glist.length>1){
+      html+='<div style="grid-column:span 2;background:linear-gradient(135deg,#1e3a8a,#2563eb);border-radius:12px;padding:12px 16px;margin-top:6px;display:flex;justify-content:space-between;align-items:center">';
+      html+='<div><div style="color:white;font-size:15px;font-weight:800">'+clientName+'</div>';
+      html+='<div style="color:#93c5fd;font-size:11px">'+glist.length+' projects</div></div>';
+      html+='<div style="text-align:right"><div style="color:white;font-size:16px;font-weight:800">Rs.'+fmt(gTotal)+'</div>';
+      html+='<div style="color:'+(gBal>0?'#fbbf24':'#6ee7b7')+';font-size:11px;font-weight:600">'+(gBal>0?'Due Rs.'+fmt(gBal):'All Paid ✓')+'</div></div>';
+      html+='</div>';
+    }
+
+    // Show cards for each project in this group
+    for(var pj=0;pj<glist.length;pj++){
+      var p=glist[pj];
+      var c=calcProj(p);
+      var sc=p.status==='Paid'?'paid':p.status==='Partial'?'partial':'pending';
+      html+='<div class="proj-card '+sc+'" onclick="openDetail('+p.id+')">';
+      html+='<span class="pc-badge '+sc+'">'+(p.status||'Pending')+'</span>';
+      // Show desc instead of client name if grouped
+      if(glist.length>1){
+        html+='<div class="pc-client">'+(p.desc||'Project '+(pj+1))+'</div>';
+      } else {
+        html+='<div class="pc-client">'+clientName+'</div>';
+        html+='<div class="pc-desc">'+(cleanDesc(p.desc)||'—')+'</div>';
+      }
+      html+='<div class="pc-total">Rs.'+fmt(c.total)+'</div>';
+      html+='<div class="pc-total-lbl">Grand Total</div>';
+      if(c.bal>0)html+='<div class="pc-bal due">Due Rs.'+fmt(c.bal)+'</div>';
+      else html+='<div class="pc-bal clear">Paid ✓</div>';
+      html+='<div class="pc-date">'+fmtDate(p.date)+'</div>';
+      html+='</div>';
+    }
+  }
+  document.getElementById('proj-grid').innerHTML=html;
+}
+
+// ── DETAIL VIEW
+var openDetailId=null;
+function openDetail(id) {
+  openDetailId=id;
+  var p=null;
+  for(var i=0;i<projects.length;i++){if(projects[i].id==id){p=projects[i];break;}}
+  if(!p)return;
+  openDetailId=id;
+  var c=calcProj(p);
+  document.getElementById('d-client').textContent=p.client;
+  document.getElementById('d-desc').textContent=p.desc||'';
+  document.getElementById('d-total').textContent='Rs.'+fmt(c.total);
+  document.getElementById('d-bal').textContent=c.bal>0?'Rs.'+fmt(c.bal):'Paid ✓';
+  document.getElementById('d-adv').textContent='Rs.'+fmt(p.advance||0);
+  document.getElementById('d-status').textContent=p.status||'Pending';
+  // Show last payment date if available
+  if(p.lastPaymentDate){
+    var lpd=document.getElementById('d-last-payment');
+    if(lpd) lpd.textContent='Last payment: '+fmtDate(p.lastPaymentDate);
+  }
+  var html='';
+  var r=p.rows||[];
+  for(var j=0;j<r.length;j++){
+    if(!r[j].desc&&!r[j].amt)continue;
+    html+='<div class="detail-item-row"><span style="color:#1e293b">'+(r[j].desc||'Item')+'</span><strong>Rs.'+fmt(parseFloat(r[j].amt)||0)+'</strong></div>';
+  }
+  html+='<div class="detail-item-row" style="border-top:2px solid #e2e8f0;margin-top:6px;padding-top:10px"><span style="color:#64748b">Total Cost</span><span>Rs.'+fmt(c.cost)+'</span></div>';
+  html+='<div class="detail-item-row"><span style="color:#64748b">Profit ('+p.profit+'%)</span><span style="color:#059669">Rs.'+fmt(c.profit)+'</span></div>';
+  html+='<div class="detail-item-row"><strong style="color:#1e3a8a">Grand Total</strong><strong style="color:#1e3a8a;font-size:16px">Rs.'+fmt(c.total)+'</strong></div>';
+  if(p.advance) html+='<div class="detail-item-row"><span style="color:#64748b">Advance</span><span>Rs.'+fmt(p.advance)+'</span></div>';
+  if(c.bal>0) html+='<div class="detail-item-row"><span style="color:#d97706;font-weight:700">Balance Due</span><span style="color:#d97706;font-weight:800">Rs.'+fmt(c.bal)+'</span></div>';
+  document.getElementById('d-items').innerHTML=html;
+
+  var pages=['dash','entry','projects','reports'];
+  for(var k=0;k<pages.length;k++) document.getElementById('page-'+pages[k]).classList.remove('active');
+  document.getElementById('proj-detail').style.display='block';
+  window.scrollTo(0,0);
+}
+
+function closeDetail() {
+  document.getElementById('proj-detail').style.display='none';
+  document.getElementById('page-projects').classList.add('active');
+  document.getElementById('nav-projects').classList.add('active');
+}
+
+function editFromDetail() { loadProject(openDetailId); }
+function deleteFromDetail() { deleteProject(openDetailId); closeDetail(); }
+
+// ── MODALS
+function closeMod(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('click', function(e) {
+  if(e.target.classList.contains('modal-bg')) e.target.classList.remove('open');
+});
+
+
+// ── REPORTS
+function renderReports() {
+  if(!projects.length){
+    document.getElementById('reports-content').innerHTML='<div class="empty"><div class="empty-ico">📊</div><p>No projects yet.</p></div>';
+    return;
+  }
+
+  // Group by client
+  var groups={};
+  for(var i=0;i<projects.length;i++){
+    var p=projects[i];
+    var key=(p.client||'Unknown').toLowerCase();
+    if(!groups[key]) groups[key]={name:p.client||'Unknown',projects:[],total:0,bal:0,paid:0};
+    var c=calcProj(p);
+    groups[key].projects.push(p);
+    groups[key].total+=c.total;
+    groups[key].bal+=c.bal;
+    if(p.status==='Paid') groups[key].paid++;
+  }
+
+  // Summary card
+  var totalBiz=0,totalDue=0;
+  for(var k in groups){totalBiz+=groups[k].total;totalDue+=groups[k].bal;}
+  var html='<div class="card" style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:20px">';
+  html+='<div style="color:#93c5fd;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Total Business</div>';
+  html+='<div style="color:white;font-size:32px;font-weight:800;margin-bottom:12px">Rs.'+fmt(totalBiz)+'</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  html+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px"><div style="color:rgba(255,255,255,0.7);font-size:10px;text-transform:uppercase;letter-spacing:0.8px">Pending Due</div><div style="color:#fbbf24;font-size:18px;font-weight:800">Rs.'+fmt(totalDue)+'</div></div>';
+  html+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px"><div style="color:rgba(255,255,255,0.7);font-size:10px;text-transform:uppercase;letter-spacing:0.8px">Collected</div><div style="color:#6ee7b7;font-size:18px;font-weight:800">Rs.'+fmt(totalBiz-totalDue)+'</div></div>';
+  html+='</div></div>';
+
+  // Per client breakdown
+  html+='<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px 4px">Client Breakdown</div>';
+  var sorted=Object.keys(groups).sort(function(a,b){return groups[b].total-groups[a].total;});
+  for(var si=0;si<sorted.length;si++){
+    var g=groups[sorted[si]];
+    var pct=g.total>0?Math.round((g.total-g.bal)/g.total*100):0;
+    html+='<div class="card" style="margin-bottom:10px;cursor:pointer" onclick="showClientReport(\''+sorted[si]+'\')">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+    html+='<div><div style="font-size:16px;font-weight:800;color:#1e293b">'+g.name+'</div>';
+    html+='<div style="font-size:12px;color:#64748b">'+g.projects.length+' project'+(g.projects.length>1?'s':'')+' · '+g.paid+' paid</div></div>';
+    html+='<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:#1e3a8a">Rs.'+fmt(g.total)+'</div>';
+    html+='<div style="font-size:12px;color:'+(g.bal>0?'#d97706':'#059669')+';font-weight:600">'+(g.bal>0?'Due Rs.'+fmt(g.bal):'Fully Paid ✓')+'</div></div></div>';
+    // Progress bar
+    html+='<div style="background:#f1f5f9;border-radius:10px;height:6px;overflow:hidden">';
+    html+='<div style="background:'+(pct>=100?'#059669':'#2563eb')+';height:100%;width:'+pct+'%;border-radius:10px;transition:width 0.5s"></div></div>';
+    html+='<div style="font-size:11px;color:#94a3b8;margin-top:4px">'+pct+'% collected</div>';
+    html+='</div>';
+  }
+
+  // Month-wise summary
+  var months={};
+  for(var mi=0;mi<projects.length;mi++){
+    var mp=projects[mi];
+    var md=mp.date?mp.date.substring(0,7):'unknown';
+    if(!months[md]) months[md]={total:0,count:0};
+    months[md].total+=calcProj(mp).total;
+    months[md].count++;
+  }
+  var mkeys=Object.keys(months).filter(function(k){return k!=='unknown';}).sort().reverse();
+  if(mkeys.length>0){
+    html+='<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px 4px">Month-wise</div>';
+    html+='<div class="card"><table style="width:100%;border-collapse:collapse">';
+    html+='<thead><tr style="border-bottom:2px solid #f1f5f9"><th style="text-align:left;padding:8px;font-size:12px;color:#64748b;font-weight:600">Month</th><th style="text-align:right;padding:8px;font-size:12px;color:#64748b;font-weight:600">Projects</th><th style="text-align:right;padding:8px;font-size:12px;color:#64748b;font-weight:600">Total</th></tr></thead><tbody>';
+    for(var mki=0;mki<mkeys.length;mki++){
+      var mk=mkeys[mki];
+      var md2=new Date(mk+'-01').toLocaleDateString('en-IN',{month:'short',year:'numeric'});
+      html+='<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 8px;font-size:14px;font-weight:600;color:#1e293b">'+md2+'</td>';
+      html+='<td style="padding:10px 8px;text-align:right;font-size:13px;color:#64748b">'+months[mk].count+'</td>';
+      html+='<td style="padding:10px 8px;text-align:right;font-size:14px;font-weight:700;color:#1e3a8a">Rs.'+fmt(months[mk].total)+'</td></tr>';
+    }
+    html+='</tbody></table></div>';
+  }
+
+  // Backup & Restore section
+  html+='<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px 4px">Backup & Restore</div>';
+  html+='<div class="card"><div style="font-size:13px;color:#64748b;margin-bottom:12px">Export all your project data or restore from a previous backup.</div>';
+  html+='<div class="backup-row">';
+  html+='<button class="backup-btn" style="background:#eff6ff;color:#2563eb" onclick="exportBackup()">⬇️ Export Backup</button>';
+  html+='<button class="backup-btn" style="background:#f0fdf4;color:#059669" onclick="triggerImport()">⬆️ Import Backup</button>';
+  html+='</div></div>';
+
+  document.getElementById('reports-content').innerHTML=html;
+}
+
+function showClientReport(key){
+  // Show all projects for this client in detail view
+  var list=projects.filter(function(p){return (p.client||'Unknown').toLowerCase()===key;});
+  if(!list.length) return;
+  var first=list[0];
+  openDetail(first.id);
+}
+
+// ── PDF INVOICE
+var _pdfProjectId=null;
+function showPDFModal(id){
+  _pdfProjectId=id||openDetailId;
+  var p=null;
+  for(var i=0;i<projects.length;i++){if(projects[i].id==_pdfProjectId){p=projects[i];break;}}
+  if(!p) return;
+  document.getElementById('pdf-client-name').textContent=p.client+(p.desc?' — '+p.desc:'');
+  document.getElementById('mod-pdf').classList.add('open');
+}
+
+function generatePDF(){
+  var p=null;
+  for(var i=0;i<projects.length;i++){if(projects[i].id==_pdfProjectId){p=projects[i];break;}}
+  if(!p){showToast('Project not found','err');return;}
+  var opt=document.querySelector('input[name="pdf-opt"]:checked');
+  var mode=opt?opt.value:'simple';
+  closeMod('mod-pdf');
+
+  var c=calcProj(p);
+  var rows2=p.rows||[];
+  var date=p.date?new Date(p.date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+
+  // Build HTML invoice
+  var itemsHtml='';
+  if(mode==='itemized'){
+    for(var j=0;j<rows2.length;j++){
+      var r=rows2[j];
+      if(!r.desc&&!r.amt) continue;
+      itemsHtml+='<tr><td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#1e293b">'+(j+1)+'. '+(r.desc||'Item')+'</td><td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-size:13px;font-weight:600;color:#1e293b">Rs.'+fmt(parseFloat(r.amt)||0)+'</td></tr>';
+    }
+  }
+
+  var totalsHtml='';
+  if(mode==='itemized'){
+    totalsHtml+='<tr style="background:#f8fafc"><td style="padding:9px 12px;font-size:13px;color:#64748b">Total Cost</td><td style="padding:9px 12px;text-align:right;font-size:13px;color:#64748b">Rs.'+fmt(c.cost)+'</td></tr>';
+  }
+  totalsHtml+='<tr style="background:#1e3a8a"><td style="padding:12px;font-size:15px;font-weight:800;color:white">Grand Total</td><td style="padding:12px;text-align:right;font-size:15px;font-weight:800;color:white">Rs.'+fmt(c.total)+'</td></tr>';
+  if(p.advance>0) totalsHtml+='<tr style="background:#f0fdf4"><td style="padding:9px 12px;font-size:13px;color:#059669;font-weight:600">Advance Received</td><td style="padding:9px 12px;text-align:right;font-size:13px;color:#059669;font-weight:600">Rs.'+fmt(p.advance)+'</td></tr>';
+  if(c.bal>0) totalsHtml+='<tr style="background:#fef3c7"><td style="padding:9px 12px;font-size:14px;font-weight:700;color:#d97706">Balance Due</td><td style="padding:9px 12px;text-align:right;font-size:14px;font-weight:700;color:#d97706">Rs.'+fmt(c.bal)+'</td></tr>';
+  else totalsHtml+='<tr style="background:#d1fae5"><td style="padding:9px 12px;font-size:13px;font-weight:700;color:#059669" colspan="2">✓ Fully Paid</td></tr>';
+
+  var invoiceHTML='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice - '+p.client+'</title><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;background:#f1f5f9;padding:20px;}@media print{body{background:white;padding:0;}}.invoice{background:white;max-width:600px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);}.header{background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:28px;}.logo{color:white;font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:4px;}.tagline{color:#93c5fd;font-size:12px;}.invoice-info{display:flex;justify-content:space-between;margin-top:16px;}.inv-box{background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;}.inv-lbl{color:rgba(255,255,255,0.6);font-size:10px;text-transform:uppercase;letter-spacing:0.8px;}.inv-val{color:white;font-size:13px;font-weight:700;margin-top:2px;}.client-section{padding:20px 24px;border-bottom:2px solid #f1f5f9;}.client-lbl{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;}.client-name{font-size:20px;font-weight:800;color:#1e293b;}.client-work{font-size:14px;color:#64748b;margin-top:2px;}table{width:100%;border-collapse:collapse;}.th{background:#f8fafc;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;}.footer{padding:16px 24px;background:#f8fafc;text-align:center;font-size:12px;color:#94a3b8;}</style></head><body><div class="invoice"><div class="header"><div class="logo">VeerCAD</div><div class="tagline">Work Expense Manager</div><div class="invoice-info"><div class="inv-box"><div class="inv-lbl">Date</div><div class="inv-val">'+date+'</div></div><div class="inv-box"><div class="inv-lbl">Status</div><div class="inv-val">'+(p.status||'Pending')+'</div></div></div></div><div class="client-section"><div class="client-lbl">Bill To</div><div class="client-name">'+p.client+'</div>'+(p.desc?'<div class="client-work">Work: '+p.desc+'</div>':'')+(p.notes?'<div style="font-size:12px;color:#94a3b8;margin-top:4px">Note: '+p.notes+'</div>':'')+'</div><table>'+(mode==='itemized'?'<thead><tr><th class="th">Description</th><th class="th" style="text-align:right">Amount</th></tr></thead><tbody>'+itemsHtml+'</tbody>':'')+'<tfoot>'+totalsHtml+'</tfoot></table><div class="footer">Generated by VeerCAD · '+new Date().toLocaleDateString('en-IN')+'</div></div></body></html>';
+
+  // Open in new tab for print/save
+  var win=window.open('','_blank');
+  if(win){
+    win.document.write(invoiceHTML);
+    win.document.close();
+    setTimeout(function(){win.print();},500);
+    showToast('Invoice opened — use Print to save as PDF','ok');
+  } else {
+    // Fallback: download as HTML
+    var blob=new Blob([invoiceHTML],{type:'text/html'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='Invoice_'+p.client+'_'+date+'.html';
+    a.click();
+    showToast('Invoice downloaded!','ok');
+  }
+}
+
+// ── WHATSAPP SHARE
+var _waProjectId=null;
+function showWAModal(id){
+  _waProjectId=id||openDetailId;
+  var p=null;
+  for(var i=0;i<projects.length;i++){if(projects[i].id==_waProjectId){p=projects[i];break;}}
+  if(!p) return;
+  var c=calcProj(p);
+  var date=p.date?new Date(p.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';
+  var msg='*VeerCAD — Work Estimate*\n';
+  msg+='━━━━━━━━━━━━━━━━━━\n';
+  msg+='*Client:* '+p.client+'\n';
+  if(p.desc) msg+='*Work:* '+p.desc+'\n';
+  if(date) msg+='*Date:* '+date+'\n';
+  msg+='━━━━━━━━━━━━━━━━━━\n';
+  var rows2=p.rows||[];
+  for(var j=0;j<rows2.length;j++){
+    var r=rows2[j];
+    if(!r.desc&&!r.amt) continue;
+    msg+=(r.desc||'Item')+': *Rs.'+fmt(parseFloat(r.amt)||0)+'*\n';
+  }
+  msg+='━━━━━━━━━━━━━━━━━━\n';
+  msg+='*Grand Total: Rs.'+fmt(c.total)+'*\n';
+  if(p.advance>0) msg+='Advance Paid: Rs.'+fmt(p.advance)+'\n';
+  if(c.bal>0) msg+='*Balance Due: Rs.'+fmt(c.bal)+'*\n';
+  else msg+='✅ Fully Paid\n';
+  if(p.notes) msg+='\n_Note: '+p.notes+'_\n';
+  msg+='\n_Powered by VeerCAD_';
+  document.getElementById('wa-preview').textContent=msg;
+  document.getElementById('mod-wa').classList.add('open');
+  _waMsg=msg;
+}
+var _waMsg='';
+function sendWA(){
+  var url='https://wa.me/?text='+encodeURIComponent(_waMsg);
+  window.open(url,'_blank');
+}
+function copyWA(){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(_waMsg).then(function(){showToast('Copied!','ok');});
+  } else {
+    var ta=document.createElement('textarea');
+    ta.value=_waMsg; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied!','ok');
+  }
+}
+
+// ── BACKUP & RESTORE
+function exportBackup(){
+  var data={version:'1.0',exported:new Date().toISOString(),projects:projects};
+  var json=JSON.stringify(data,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='VeerCAD_backup_'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();
+  showToast('Backup downloaded!','ok');
+}
+
+function triggerImport(){
+  document.getElementById('import-file').click();
+}
+
+function handleImport(input){
+  if(!input.files||!input.files[0]) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      var imported=data.projects||[];
+      var added=0;
+      for(var i=0;i<imported.length;i++){
+        var exists=false;
+        for(var j=0;j<projects.length;j++){
+          if(projects[j].id===imported[i].id){exists=true;break;}
+        }
+        if(!exists){projects.push(imported[i]);added++;}
+      }
+      localStorage.setItem('vc_p',JSON.stringify(projects));
+      renderDash();
+      showToast('Imported '+added+' new projects!','ok');
+    }catch(err){
+      showToast('Invalid backup file','err');
+    }
+  };
+  reader.readAsText(input.files[0]);
+  input.value='';
+}
+
+// ── HELPERS
+function fmt(n){return Math.round(n).toLocaleString('en-IN');}
+function cleanDesc(d){
+  if(!d||d.length<=3) return '';
+  var NOISE_D=['ligh','ligh','work','kaam','new','old','test','ok','a','b','c'];
+  if(NOISE_D.indexOf(d.toLowerCase().trim())>-1) return '';
+  return d;
+}
+function sv(s){return String(s||'').split('"').join('').split("'").join('');}
+function fmtDate(d){if(!d)return '';try{return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}catch(e){return d;}}
+
+// ── TOAST
+var toastTimer;
+function showToast(msg,type){
+  var el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='show'+(type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){el.className='';},2500);
+}
+</script>
+
+<!-- API Key Modal -->
+<div id="mod-apikey" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:white;border-radius:20px;padding:28px 24px;width:100%;max-width:400px">
+    <div style="font-size:20px;font-weight:800;color:#1e3a8a;margin-bottom:8px">🔑 Anthropic API Key</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:16px;line-height:1.5">
+      Needed for <strong>Read Bill</strong> (photo reading). Get free key at:<br>
+      <a href="https://console.anthropic.com" target="_blank" style="color:#3b82f6">console.anthropic.com</a>
+      → API Keys → Create Key
+    </div>
+    <input id="apikey-input" type="password" placeholder="sk-ant-api03-..." 
+      style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;box-sizing:border-box;margin-bottom:12px">
+    <button onclick="saveApiKey()" style="width:100%;padding:14px;background:#1e3a8a;color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">
+      ✅ Save Key
+    </button>
+    <button onclick="document.getElementById('mod-apikey').style.display='none'" 
+      style="width:100%;padding:10px;background:none;border:none;color:#94a3b8;font-size:13px;cursor:pointer;margin-top:6px">
+      Skip (Smart Input still works without key)
+    </button>
+    <div style="font-size:11px;color:#94a3b8;margin-top:10px;text-align:center">
+      🔒 Key stored only on your phone, never shared
+    </div>
+  </div>
+</div>
+</body>
+</html>
